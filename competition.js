@@ -15,6 +15,8 @@ module.exports = class Competition {
                 solves: {},
                 cups: {},
                 serverData: {
+                    url: "http://localhost",
+                    port: 80,
                     UIDs: {},
                     tokens: {},
                 },

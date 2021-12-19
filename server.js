@@ -4,11 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 module.exports = class WebServer {
     constructor(competition, discordClient, dataInput) {
 
+        this.data = dataInput;
+
         // ---------------------------- Web Services -------------------------------
 
         const app = express()
-        const port = 5000
-        this.url = "http://localhost:" + port;
+        const port = this.data.port;
+        this.url = this.data.url;
 
         app.use(express.static('public'));
 
@@ -17,8 +19,6 @@ module.exports = class WebServer {
         const Server = require('ws').Server;
 
         const wss = new Server({server: server});
-
-        this.data = dataInput;
 
         wss.on('connection', function connection(ws) {
             // console.log('Connected!');
