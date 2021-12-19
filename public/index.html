@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CompBot Web</title>
+    <script src="jquery-1.9.1.min.js"></script>
+    <!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+
+<h1 id="message">Waiting for organizer...</h1>
+
+<div></div>
+
+</body>
+<style>
+
+    * {
+        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        height: 100vh;
+        margin: 0;
+
+        background-color: #1368ce;
+
+        text-align: center;
+        color: white;
+    }
+
+</style>
+<script>
+
+    let socket = null;
+    let uid = null;
+
+    function main() {
+
+        socket = new WebSocket("wss://"+location.href.split("://")[1]);
+
+        const token = new URLSearchParams(window.location.search).get('t');
+        uid = new URLSearchParams(window.location.search).get('uid');
+
+        function assignFunctions(socket) {
+            socket.onopen = function() {
+                if (token !== null) socket.send(JSON.stringify({token:token}));
+                else socket.send(JSON.stringify({uid:uid,eType:'ping uid'}));
+            };
+
+            socket.onmessage = function(event) {
+                try {
+                    const newData = JSON.parse(event.data);
+
+                    if (newData.message !== undefined) $("#message").text(newData.message);
+
+                    if (uid === null && newData.uid !== undefined) {
+                        window.location.href = "/?uid=" + newData.uid;
+                    }
+
+                    if (uid !== null) {
+                        if (newData.body === 'pong uid') $("#message").text('Login successful!');
+                    }
+
+                    console.log(newData);
+                } catch (e) {
+                    console.log(event.data);
+                }
+            };
+
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    // e.g. server process killed or network down
+                    // event.code is usually 1006 in this case
+                    console.log('[close] Connection died');
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.log('trying ws...');
+                socket = new WebSocket("ws://"+location.href.split("://")[1]);
+                assignFunctions(socket);
+                // alert(`[error] ${error.message}`);
+                // console.log(error);
+            };
+        }
+
+        if (token === null && uid === null) $("#message").text("Please get a link through Discord!");
+        else assignFunctions(socket);
+    }
+    $(document).ready(main)
+</script>
+</html>

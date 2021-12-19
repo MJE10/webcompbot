@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CompBot Web Control</title>
+    <script src="../jquery-1.9.1.min.js"></script>
+    <!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+
+<div id="tabs">
+    <div id="tab_list" class="tab selectedTab" onclick="changeTab('list')">People List</div>
+    <div id="tab_solves" class="tab" onclick="changeTab('solves')">Solves List</div>
+    <div id="tab_settings" class="tab" onclick="changeTab('settings')">Settings</div>
+</div>
+
+<div id="content">
+    <div class="contentType" id="listContent">
+        <div class="listType" id="scramble"><div class="listTypeHeader"><p>Scramblers</p></div></div>
+        <div class="listType" id="run"><div class="listTypeHeader"><p>Runners</p></div></div>
+        <div class="listType" id="judge"><div class="listTypeHeader"><p>Judges</p></div></div>
+        <div class="listType" id="compete"><div class="listTypeHeader"><p>Competitors</p></div></div>
+    </div>
+    <div class="contentType" id="solvesContent">
+
+    </div>
+    <div class="contentType" id="settingsContent">
+
+    </div>
+</div>
+
+</body>
+<style>
+
+    * {
+        font-family: sans-serif;
+    }
+
+    body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    p {
+        margin: 0;
+    }
+
+    #tabs {
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .tab {
+        background-color: lightgray;
+        display: inline-block;
+        padding: 4px;
+        flex-grow: 1;
+        border: 3px solid black;
+        text-align: center;
+    }
+
+    .selectedTab {
+        border-bottom: 0;
+    }
+
+    @media (orientation: portrait) {
+        #tabs {
+            flex-direction: column;
+        }
+
+        .selectedTab {
+            border-bottom: 3px solid black;
+        }
+    }
+
+    #content {
+        flex-grow: 1;
+    }
+
+    .contentType {
+        height: 100%;
+        width: 100%;
+        background-color: lightgray;
+    }
+
+    #listContent {
+        display: flex;
+    }
+
+    #solvesContent {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .solve {
+        text-align: center;
+        padding: 2px;
+        font-weight: bold;
+        border: 1px solid black;
+    }
+
+    .listType {
+        flex-grow: 1;
+    }
+
+    @media (orientation: portrait) {
+        #listContent {
+            flex-direction: column;
+        }
+
+        .listType {
+            flex-grow: 0;
+        }
+    }
+
+    .person, .listTypeHeader {
+        text-align: center;
+        padding: 2px;
+        font-weight: bold;
+        border: 1px solid black;
+    }
+
+    #scramble div {
+        background-color: #ff9c9c;
+    }
+
+    #run div {
+        background-color: #fcff9c;
+    }
+
+    #judge div {
+        background-color: #9eff9c;
+    }
+
+    #compete div {
+        background-color: #a39cff;
+    }
+
+    #settingsContent {
+    }
+
+</style>
+<script>
+
+    let gameInfo = {
+        "people": {},
+        "solves": {},
+        // "peopleTypes": {
+        //     "scramble": [],
+        //     "run": [],
+        //     "judge": [],
+        //     "compete": [],
+        // }
+    };
+
+    let gameUpdate = {
+        "people": {
+            123: {
+                "id": 123,
+                "type": "scramble",
+                "displayName": "Michael Elia 1"
+            },
+            165: {
+                "id": 165,
+                "type": "scramble",
+                "displayName": "Anthony"
+            },
+            124: {
+                "id": 124,
+                "type": "run",
+                "displayName": "Michael Elia 2"
+            },
+            125: {
+                "id": 125,
+                "type": "judge",
+                "displayName": "Michael Elia 3"
+            },
+            135: {
+                "id": 135,
+                "type": "compete",
+                "displayName": "Lee"
+            }
+        },
+        "solves": {
+            111: {
+                "id": 111,
+                "competitor": 135,
+                "type": "scramble"
+            }
+        }
+    }
+
+    let socket = null;
+
+    function main() {
+
+        socket = new WebSocket("wss://"+location.href.split("://")[1]);
+
+        function assignFunctions(oldSocket) {
+            oldSocket.onopen = function() {
+                // fetchData(true);
+            };
+
+            oldSocket.onmessage = function(event) {
+                try {
+                    const newData = JSON.parse(event.data);
+                    console.log(newData);
+                } catch (e) {
+                    console.log(event.data);
+                }
+            };
+
+            oldSocket.onclose = function(event) {
+                if (event.wasClean) {
+                    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    // e.g. server process killed or network down
+                    // event.code is usually 1006 in this case
+                    console.log('[close] Connection died');
+                }
+            };
+
+            oldSocket.onerror = function(error) {
+                console.log('trying ws...');
+                socket = new WebSocket("ws://"+location.href.split("://")[1]);
+                assignFunctions(socket);
+                // alert(`[error] ${error.message}`);
+                // console.log(error);
+            };
+        }
+
+        assignFunctions(socket);
+
+        changeTab("list");
+        updateGame(gameUpdate);
+    }
+
+    function changeTab(x) {
+        $(".selectedTab").removeClass("selectedTab");
+        $("#tab_" + x).addClass("selectedTab");
+
+        $("#listContent").hide();
+        $("#solvesContent").hide();
+        $("#settingsContent").hide();
+        $("#" + x + "Content").show();
+    }
+
+    function selectPerson(id) {
+        console.log(id);
+    }
+
+    function selectSolve(id) {
+        console.log(id);
+    }
+
+    function updateGame(gameUpdate) {
+        for (const personIndex in gameUpdate["people"]) {
+            let person = gameUpdate["people"][personIndex];
+            if (gameInfo["people"][personIndex] === undefined) {
+                gameInfo["people"][personIndex] = gameUpdate["people"][person];
+                $("#" + person["type"]).append("<div class='person' onclick='selectPerson(" + person["id"] + ")'><p>" + person["displayName"] + "</p></div>");
+            } else {
+                // person might have changed since last time?
+            }
+            // person may have disappeared?
+        }
+        for (const solveIndex in gameUpdate["solves"]) {
+            let solve = gameUpdate["solves"][solveIndex];
+            if (gameInfo["solves"][solveIndex] === undefined) {
+                gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
+                $("#solvesContent").append("<div class='solve' onclick='selectSolve(" + solve["id"] + ")'><p>" + solve["id"] + "</p></div>");
+            } else {
+                // solve might have changed since last time?
+            }
+        }
+    }
+
+    $(document).ready(main)
+</script>
+</html>
