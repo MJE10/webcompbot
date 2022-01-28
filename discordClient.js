@@ -25,7 +25,8 @@ module.exports = class DiscordClient {
             RESULTS_MESSAGE: '893986058377785364',
             ROLE_MODERATOR: '886246346779144252',
             MESSAGE_HOME: '921977727093973073',
-            CLIENT_SNOWFLAKE: '886086206444687393'
+            CLIENT_SNOWFLAKE: '886086206444687393',
+            MJE10_SNOWFLAKE: '159045740457361409'
         }
 
         this.waitingUsers = [];
@@ -75,6 +76,10 @@ module.exports = class DiscordClient {
             delete this.data.userLinkChannels[user];
             this.onDataChanged(this.data);
         }
+    }
+
+    isAdmin(id) {
+        return id === this.constants.MJE10_SNOWFLAKE;
     }
 
     onUsersReact = () => {};

@@ -10,9 +10,9 @@
 </head>
 <body>
 
-<h1 id="message">Waiting for organizer...</h1>
+<h1 id="message">Loading...</h1>
 
-<div></div>
+<div class="temp"></div>
 
 </body>
 <style>
@@ -25,6 +25,7 @@
         display: flex;
         flex-direction: column;
         justify-content: space-around;
+        align-items: center;
         height: 100vh;
         margin: 0;
 
@@ -34,26 +35,62 @@
         color: white;
     }
 
+    #message {
+        padding: 1em 1em 0 1em;
+        margin: 0;
+        white-space: pre-line;
+    }
+
+    button {
+        display: inline-block;
+        margin: 5px;
+    }
+
+    button h1 {
+        margin: 10px;
+        font-size: large;
+    }
+
+    .images {
+        flex-shrink: 1;
+        margin: 5px;
+    }
+
+    img {
+        display: inline-block;
+        width: min(40vw, min(60vh, 300px));
+    }
+
+    input {
+        font-size: large;
+    }
+
 </style>
 <script>
 
     let socket = null;
+    let connected = false;
     let uid = null;
 
     function main() {
 
-        socket = new WebSocket("wss://"+location.href.split("://")[1]);
+        $("body").css('height', window.innerHeight);
+
+        socket = new WebSocket("ws://"+location.href.split("://")[1]); // change to WSS if goes to production
 
         const token = new URLSearchParams(window.location.search).get('t');
         uid = new URLSearchParams(window.location.search).get('uid');
 
-        function assignFunctions(socket) {
-            socket.onopen = function() {
-                if (token !== null) socket.send(JSON.stringify({token:token}));
-                else socket.send(JSON.stringify({uid:uid,eType:'ping uid'}));
+        const assignFunctions = (newSocket) => {
+            newSocket.onopen = function() {
+                socket = newSocket;
+                connected = true;
+                console.log('connected!');
+                if (token !== null) newSocket.send(JSON.stringify({token:token}));
+                else newSocket.send(JSON.stringify({uid:uid,eType:'ping uid'}));
             };
 
-            socket.onmessage = function(event) {
+            newSocket.onmessage = function(event) {
                 try {
                     const newData = JSON.parse(event.data);
 
@@ -64,16 +101,54 @@
                     }
 
                     if (uid !== null) {
-                        if (newData.body === 'pong uid') $("#message").text('Login successful!');
+                        if (newData.eType === 'pong uid') {
+                            $("#message").text('Login successful! Waiting for organizer...');
+                            newSocket.send(JSON.stringify({uid:uid, eType:'action subscribe'}));
+                        } else if (newData.eType === 'action') {
+                            const body = $("body");
+                            $(".temp").remove();
+                            if (newData.action.type === 'buttons') {
+                                $("#message").html(newData.action.message);
+                                for (const buttonIndex in newData.action.buttons) {
+                                    const button = newData.action.buttons[buttonIndex];
+                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                }
+                            } else if (newData.action.type === 'message') {
+                                $("#message").html(newData.action.message);
+                            } else if (newData.action.type === 'newLink') {
+                                $("#message").html(newData.action.message);
+                                window.location.href = newData.action.link;
+                            } else if (newData.action.type === 'imagesAndButtons') {
+                                $("#message").html(newData.action.message);
+                                body.append("<div class='images temp' id='images'></div>");
+                                for (const imgIndex in newData.action.images) {
+                                    $("#images").append("<img class='temp' src=\"" + newData.action.images[imgIndex] + "\">");
+                                }
+                                for (const buttonIndex in newData.action.buttons) {
+                                    const button = newData.action.buttons[buttonIndex];
+                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                }
+                            } else if (newData.action.type === 'numberBoxAndButtons') {
+                                $("#message").html(newData.action.message);
+                                body.append("<input type='number' class='temp' id='numberBox' min='0' inputmode='decimal'>");
+                                for (const buttonIndex in newData.action.buttons) {
+                                    const button = newData.action.buttons[buttonIndex];
+                                    if (button.value !== "done") body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                    else body.append("<button class='temp' onclick='clickedButton($(\"#numberBox\").val())'><h1>" + button.text + "</h1></button>");
+                                }
+                            }
+                            body.append("<div class=\"temp\"></div>");
+                        }
                     }
 
                     console.log(newData);
                 } catch (e) {
+                    console.log(e);
                     console.log(event.data);
                 }
             };
 
-            socket.onclose = function(event) {
+            newSocket.onclose = function(event) {
                 if (event.wasClean) {
                     console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
                 } else {
@@ -81,20 +156,43 @@
                     // event.code is usually 1006 in this case
                     console.log('[close] Connection died');
                 }
+                if (connected) window.location.reload();
             };
 
-            socket.onerror = function(error) {
+            newSocket.onerror = function(error) {
                 console.log('trying ws...');
-                socket = new WebSocket("ws://"+location.href.split("://")[1]);
-                assignFunctions(socket);
+                newSocket = new WebSocket("ws://"+location.href.split("://")[1]);
+                assignFunctions(newSocket);
                 // alert(`[error] ${error.message}`);
                 // console.log(error);
             };
         }
 
-        if (token === null && uid === null) $("#message").text("Please get a link through Discord!");
+        if (token === null && uid === null) {
+            $("#message").text("Welcome!");
+            const body = $("body");
+            $(".temp").remove();
+            body.append('<a href="results"><button class="temp"><h1>Results</h1></button></a>');
+            body.append('<div class="temp"></div>');
+        }
         else assignFunctions(socket);
     }
+
+    function clickedButton(x) {
+        showLoading();
+        socket.send(JSON.stringify({uid: uid, eType: "click", click: {type: "button", value: x}}));
+    }
+
+    function showLoading() {
+        $(".temp").remove();
+        $("#message").text('Loading...');
+        $("body").append("<div class=\"temp\"></div>");
+    }
+
+    function results() {
+        window.location.href = "/results";
+    }
+
     $(document).ready(main)
 </script>
 </html>

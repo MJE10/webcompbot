@@ -22,13 +22,46 @@
         <div class="listType" id="run"><div class="listTypeHeader"><p>Runners</p></div></div>
         <div class="listType" id="judge"><div class="listTypeHeader"><p>Judges</p></div></div>
         <div class="listType" id="compete"><div class="listTypeHeader"><p>Competitors</p></div></div>
+        <div class="listType" id="organizer_chosen"><div class="listTypeHeader"><p>Unassigned</p></div></div>
+        <div class="listType" id="undefined"><div class="listTypeHeader"><p>Undefined</p></div></div>
     </div>
     <div class="contentType" id="solvesContent">
-
+        <div class="listType" id="cups"><div class="listTypeHeader"><p>Cups</p></div></div>
+        <div class="listType" id="solves"><div class="listTypeHeader"><p>Solves</p></div></div>
     </div>
     <div class="contentType" id="settingsContent">
-
+        <button onclick="saveComp()">Save Competition</button>
+        <button id="renameCompButton" onclick="renameComp()">Rename Competition (Currently "")</button>
+        <button id="setSolvesButton" onclick="setSolvesPerAverage()">Set solves per average (Currently ?)</button>
+        <button onclick="loadComp()">Load Competition</button>
+        <button onclick="newComp()">New Competition</button>
+        <button id="refreshActions" onclick="refreshActions()">Regenerate Actions</button>
+        <button onclick="newCup()">Add Cup</button>
     </div>
+</div>
+
+<div id="prompt">
+    <h1 id="promptMessage">Please select a competition:</h1>
+</div>
+
+<div id="person">
+    <h2 id="personName">name</h2>
+    <h2 id="personId">id</h2>
+    <h2 id="personSocketCount">sockets</h2>
+    <h2 id="personDiscordUser">discord</h2>
+    <h2 id="personDiscordTag">discord tag</h2>
+    <h2 id="personType">type</h2>
+    <h2 id="personStatus">status</h2>
+    <h2 id="personAction">action</h2>
+    <iframe id="personIframe" src="https://www.google.com" title="description"></iframe><br>
+    <button onclick="closePerson()">Close</button>
+    <button id="personChangeDisplayName" onclick="">Change Display Name</button>
+</div>
+
+<div id="cup">
+    <h2 id="cupId">id</h2>
+    <h2 id="cupName">name</h2>
+    <button onclick="closeCup()">Close</button>
 </div>
 
 </body>
@@ -93,7 +126,6 @@
 
     #solvesContent {
         display: flex;
-        flex-direction: column;
     }
 
     .solve {
@@ -108,7 +140,7 @@
     }
 
     @media (orientation: portrait) {
-        #listContent {
+        #listContent, #solvesContent {
             flex-direction: column;
         }
 
@@ -124,11 +156,11 @@
         border: 1px solid black;
     }
 
-    #scramble div {
+    #scramble div, #cups div {
         background-color: #ff9c9c;
     }
 
-    #run div {
+    #run div, #solves div {
         background-color: #fcff9c;
     }
 
@@ -143,74 +175,210 @@
     #settingsContent {
     }
 
+    #prompt {
+        position: absolute;
+        display: inline-block;
+        width: 60%;
+        left: 20%;
+        top: 10%;
+        background-color: gray;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .temp {
+        margin: 10px;
+    }
+
+    #person, #cup {
+        position: absolute;
+        display: inline-block;
+        width: 60%;
+        left: 20%;
+        top: 10%;
+        padding-bottom: 10px;
+        background-color: gray;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    #person *, #cup *s {
+        margin-top: 10px;
+    }
+
+    #person iframe {
+        width: 80%;
+    }
+
 </style>
 <script>
 
     let gameInfo = {
-        "people": {},
-        "solves": {},
-        // "peopleTypes": {
-        //     "scramble": [],
-        //     "run": [],
-        //     "judge": [],
-        //     "compete": [],
-        // }
-    };
-
-    let gameUpdate = {
         "people": {
-            123: {
-                "id": 123,
+            0: {
+                "id": 0,
                 "type": "scramble",
-                "displayName": "Michael Elia 1"
-            },
-            165: {
-                "id": 165,
-                "type": "scramble",
-                "displayName": "Anthony"
-            },
-            124: {
-                "id": 124,
-                "type": "run",
-                "displayName": "Michael Elia 2"
-            },
-            125: {
-                "id": 125,
-                "type": "judge",
-                "displayName": "Michael Elia 3"
-            },
-            135: {
-                "id": 135,
-                "type": "compete",
-                "displayName": "Lee"
+                "displayName": "Loading..."
             }
         },
         "solves": {
-            111: {
-                "id": 111,
-                "competitor": 135,
-                "type": "scramble"
-            }
+
+        },
+        "cups": {
+
+        }
+    };
+
+    let comp = {};
+
+    let socket = null;
+    let uid = null;
+    let connected = false;
+
+    const settingsOptions = {
+        "roleSelect": {
+            message: "Please select what roles are available",
+            showButton: true,
+            name: "Role Select",
+            options: [{
+                type: "selectMultiple",
+                min: 1,
+                options: [
+                    { value: 'scramble', text: 'scrambler' },
+                    { value: 'run', text: 'runner' },
+                    { value: 'judge', text: 'judge' },
+                    { value: 'compete', text: 'competitor' },
+                    { value: 'organizer_chosen', text: 'organizer choice' },
+                ]
+            }]
+        },
+        "cupNumbers": {
+            message: "Cups are ___ to/by competitors:",
+            showButton: true,
+            name: "Cup Numbers",
+            options: [
+                {
+                    type: "selectOne",
+                    options: [
+                        { value: 'assigned', text: 'Assigned' },
+                        { value: 'chosen', text: 'Self-Chosen' }
+                    ]
+                }
+            ]
+        },
+        "runnerEnabled": {
+            message: "The cubes need to be run between stations:",
+            showButton: true,
+            name: "Runner Enabled",
+            options: [
+                {
+                    type: "selectOne",
+                    options: [
+                        { value: 'true', text: 'true' },
+                        { value: 'false', text: 'false' }
+                    ]
+                }
+            ]
+        },
+        "volunteersUnited": {
+            message: "Any volunteer should be able to service any cube:",
+            showButton: true,
+            name: "Volunteers United",
+            options: [
+                {
+                    type: "selectOne",
+                    options: [
+                        { value: 'true', text: 'true' },
+                        { value: 'false', text: 'false' }
+                    ]
+                }
+            ]
+        },
+        "choosePersonType": {
+            message: "Please choose the person's type",
+            showButton: false,
+            options: [{
+                type: "selectOne",
+                options: [
+                    { value: 'scramble', text: 'scrambler' },
+                    { value: 'run', text: 'runner' },
+                    { value: 'judge', text: 'judge' },
+                    { value: 'compete', text: 'competitor' }
+                ]
+            }]
+        },
+        "choosePersonCup": {
+            message: "Please choose the person's cup",
+            showButton: false,
+            options: [{
+                type: "selectOne",
+                options: []
+            }]
         }
     }
 
-    let socket = null;
-
     function main() {
 
-        socket = new WebSocket("wss://"+location.href.split("://")[1]);
+        this.personClicked = null;
+        this.cupClicked = null;
+
+        $("#prompt").hide();
+        $("#person").hide();
+        $("#cup").hide();
+
+        for (const optionIndex in settingsOptions) if (settingsOptions[optionIndex].showButton) {
+            $("#settingsContent").append("<button id=\"set"+optionIndex+"\" onclick=\"setPrompt('"+optionIndex+"', settingEdited)\">Set "+settingsOptions[optionIndex].name+"</button>")
+        }
+
+        socket = new WebSocket("ws://"+location.href.split("://")[1]);
+
+        uid = new URLSearchParams(window.location.search).get('uid');
 
         function assignFunctions(oldSocket) {
             oldSocket.onopen = function() {
-                // fetchData(true);
+                console.log('connected');
+                connected = true;
+                oldSocket.send(JSON.stringify({uid:uid,eType:'ping uid'}));
             };
 
             oldSocket.onmessage = function(event) {
                 try {
                     const newData = JSON.parse(event.data);
+
+                    if (newData.message !== undefined) $("#message").text(newData.message);
+
+                    if (uid === null && newData.uid !== undefined) {
+                        window.location.href = "/?uid=" + newData.uid;
+                    }
+
+                    if (uid !== null) {
+                        if (newData.eType === 'pong uid') {
+                            socket.send(JSON.stringify({uid:uid,eType:"control subscribe"}));
+                        }
+                        if (newData.eType === 'update') {
+                            updateGame(newData.gameUpdate);
+                        }
+                        if (newData.eType === 'loadComp') {
+                            $("#promptMessage").text('Select competition:');
+                            $(".temp").remove();
+                            $("#prompt").append("<select class='temp' id='promptSelect'></select><br>");
+                            $("#prompt").append("<button class='temp' onclick='selectLoadComp($(\"#promptSelect\").val())'>Ok</button>");
+                            for (const index in newData.names) {
+                                $("#promptSelect").append("<option value='"+index+"'>"+newData.names[index]+"</option>");
+                            }
+                            $("#person").hide();
+                            $("#prompt").show();
+                        }
+                        if (newData.eType === 'new link') {
+                            console.log('got new link')
+                            window.location.href = newData.link;
+                        }
+                    }
+
                     console.log(newData);
                 } catch (e) {
-                    console.log(event.data);
+                    console.log(e);
+                    // console.log(event.data);
                 }
             };
 
@@ -222,6 +390,7 @@
                     // event.code is usually 1006 in this case
                     console.log('[close] Connection died');
                 }
+                if (connected) window.location.reload();
             };
 
             oldSocket.onerror = function(error) {
@@ -236,7 +405,6 @@
         assignFunctions(socket);
 
         changeTab("list");
-        updateGame(gameUpdate);
     }
 
     function changeTab(x) {
@@ -258,25 +426,234 @@
     }
 
     function updateGame(gameUpdate) {
+        comp = gameUpdate;
+        if ($("#person").css("display") !== "none") this.clickPerson(this.personClicked);
+        if ($("#cup").css("display") !== "none") this.clickCup(this.cupClicked);
+        if (Object.keys(gameUpdate).length === 0) window.location.href = window.location.href.split("control/")[0] + "?" + window.location.href.split("?")[1];
+        $("#renameCompButton").text('Rename Competition (Currently "' + gameUpdate.competitionName + '")');
+        $("#setSolvesButton").text('Set solves per average (Currently ' + gameUpdate.solvesPerAverage + ')');
+
+        for (const optionIndex in settingsOptions) if (settingsOptions[optionIndex].showButton) {
+            $("#set"+optionIndex).text('Set ' + settingsOptions[optionIndex].name + " (Currently " + gameUpdate.settings[optionIndex] + ")")
+        }
+
+        gameInfo.people = {};
+        $(".person").remove();
+
         for (const personIndex in gameUpdate["people"]) {
             let person = gameUpdate["people"][personIndex];
             if (gameInfo["people"][personIndex] === undefined) {
-                gameInfo["people"][personIndex] = gameUpdate["people"][person];
-                $("#" + person["type"]).append("<div class='person' onclick='selectPerson(" + person["id"] + ")'><p>" + person["displayName"] + "</p></div>");
+                gameInfo["people"][personIndex] = gameUpdate["people"][personIndex];
+                $("#" + (person["type"] === undefined ? 'undefined' : person["type"])).append("<div class='person' onclick='clickPerson(\""+person.id+"\")' id='person" + person.id + "' onclick='selectPerson(" + person["id"] + ")'><p>" + person["displayName"] + "</p></div>");
             } else {
                 // person might have changed since last time?
+                gameInfo["people"][personIndex] = gameUpdate["people"][personIndex];
             }
-            // person may have disappeared?
         }
+        const toDeleteFromPeople = [];
+        for (const personIndex in gameInfo.people) if (gameUpdate.people[personIndex] === undefined) {
+            $("#person" + gameInfo.people[personIndex].id).remove();
+            toDeleteFromPeople.push(personIndex);
+        }
+        for (const personIndexIndex in toDeleteFromPeople) delete gameInfo.people[toDeleteFromPeople[personIndexIndex]];
+
         for (const solveIndex in gameUpdate["solves"]) {
             let solve = gameUpdate["solves"][solveIndex];
             if (gameInfo["solves"][solveIndex] === undefined) {
                 gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
-                $("#solvesContent").append("<div class='solve' onclick='selectSolve(" + solve["id"] + ")'><p>" + solve["id"] + "</p></div>");
+                $("#solves").append("<div class='person' id='solve" + solve.id + "'  onclick='selectSolve(" + solve["id"] + ")'><p>" + comp.cups[solve["cup"]].name + "</p></div>");
             } else {
                 // solve might have changed since last time?
+                gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
             }
         }
+        const toDeleteFromSolves = [];
+        for (const solveIndex in gameInfo.solves) if (gameUpdate.solves[solveIndex] === undefined) {
+            $("#solve" + gameInfo.solves[solveIndex].id).remove();
+            toDeleteFromSolves.push(solveIndex);
+        }
+        for (const solveIndexIndex in toDeleteFromSolves) delete gameInfo.cups[toDeleteFromSolves[solveIndexIndex]];
+
+        let chooseCupOptions = [];
+        for (const cupIndex in gameUpdate["cups"]) {
+            let cup = gameUpdate["cups"][cupIndex];
+            let cupTaken = false;
+            for (const solveIndex in gameUpdate["solves"]) if (gameUpdate["solves"][solveIndex].status !== 'complete'
+                && gameUpdate["solves"][solveIndex].cup === cupIndex)
+                cupTaken = true;
+            if (!cupTaken) chooseCupOptions.push({value: cupIndex, text: cup.name});
+            if (gameInfo["cups"][cupIndex] === undefined) {
+                gameInfo["cups"][cupIndex] = gameUpdate["cups"][cup];
+                $("#cups").append("<div class='person' id='cup" + cupIndex + "'  onclick='clickCup(" + cup["id"] + ")'><p>" + cup["id"] + ": " + cup['name'] + "</p></div>");
+            } else {
+                // cup might have changed since last time?
+                gameInfo["cups"][cupIndex] = gameUpdate["cups"][cup];
+            }
+        }
+        settingsOptions.choosePersonCup.options[0].options = chooseCupOptions;
+        const toDeleteFromCups = [];
+        for (const cupIndex in gameInfo.cups) if (gameUpdate.cups[cupIndex] === undefined) {
+            $("#solve" + gameInfo.cups[cupIndex].id).remove();
+            toDeleteFromCups.push(cupIndex);
+        }
+        for (const cupIndexIndex in toDeleteFromCups) delete gameInfo.cups[toDeleteFromCups[cupIndexIndex]];
+    }
+
+    function saveComp() {
+        socket.send(JSON.stringify({uid:uid,eType:"saveComp"}));
+    }
+
+    function renameComp() {
+        socket.send(JSON.stringify({uid:uid,eType:"renameComp",name:prompt('New name?')}));
+    }
+
+    function setSolvesPerAverage() {
+        socket.send(JSON.stringify({uid:uid,eType:"setSolvesPerAverage",number:parseInt(prompt('New number of solves?'))}));
+    }
+
+    function loadComp() {
+        socket.send(JSON.stringify({uid:uid,eType:"loadComp"}));
+    }
+
+    function selectLoadComp(index) {
+        $("#prompt").hide();
+        socket.send(JSON.stringify({uid:uid,eType:"loadComp",id:index}));
+    }
+
+    function newComp() {
+        socket.send(JSON.stringify({uid:uid,eType:"newComp",name:prompt('New name?')}));
+    }
+
+    function setPrompt(setting, callback) {
+        this.promptCallback = callback;
+        $("#prompt").hide();
+        $(".temp").remove();
+        $("#promptMessage").text(settingsOptions[setting].message);
+        for (const optionIndex in settingsOptions[setting].options) {
+            const option = settingsOptions[setting].options[optionIndex];
+            if (option.type === 'selectMultiple') {
+                $("#prompt").append("<select class='temp' id='promptSelect' multiple></select><br>");
+                for (const index in option.options) {
+                    $("#promptSelect").append("<option value='"+option.options[index].value+"'>"+option.options[index].text+"</option>");
+                }
+            } else if (option.type === 'selectOne') {
+                $("#prompt").append("<select class='temp' id='promptSelect'></select><br>");
+                for (const index in option.options) {
+                    $("#promptSelect").append("<option value='"+option.options[index].value+"'>"+option.options[index].text+"</option>");
+                }
+            }
+        }
+        $("#prompt").append("<button class='temp' onclick='okPrompt(\"" + setting + "\")'>Ok</button>");
+        $("#prompt").show();
+        $("#person").hide();
+        console.log('choosing...');
+    }
+
+    function okPrompt(setting) {
+        if (settingsOptions[setting].options.length === 1) {
+            const option = settingsOptions[setting].options[0];
+            if (option.type === 'selectMultiple') {
+                let selected = $("#promptSelect").val();
+                if (selected === null) selected = [];
+                if ((option.min === undefined || selected.length >= option.min)
+                    && (option.max === undefined || selected.length <= option.max))
+                    this.promptCallback(setting, selected);
+            } else if (option.type === 'selectOne') {
+                this.promptCallback(setting, $("#promptSelect").val());
+            }
+        }
+        $("#prompt").hide();
+    }
+
+    function settingEdited(setting, val) {
+        socket.send(JSON.stringify({uid:uid,eType:"editSetting",setting:setting,value:val}));
+    }
+
+    function clickPerson(id) {
+        this.personClicked = id;
+        console.log(id);
+        $(".personTemp").remove();
+        const person = comp.people[id];
+        $("#personName").text("Display name: " + person.displayName);
+        $("#personId").html("<a href='" + comp.serverData.url + "?uid=" + person.id + "'>id:</a> " + person.id);
+        let socketCount = comp.serverData.socketCount[person.id];
+        if (socketCount === undefined) socketCount = 0;
+        $("#personSocketCount").text('Sockets open: ' + socketCount);
+        $("#personDiscordUser").html("<a href='https://www.discordapp.com/users/" + person.discordUser + "'>Discord user:</a> " + person.discordUser);
+        $("#personDiscordTag").text("Discord tag: " + person.discordTag);
+        $("#personType").text("Type: " + person.type);
+        $("#personStatus").text("Status: " + person.status);
+        $("#personAction").text("Action: " + JSON.stringify(person.action));
+        $("#personChangeDisplayName").attr("onclick", "personChangeDisplayName(\"" + person.id + "\")");
+        if ($("#personIframe").attr("src") !== comp.serverData.url + "?uid=" + person.id) $("#personIframe").attr("src", comp.serverData.url + "?uid=" + person.id);
+
+        if (person.type === 'organizer_chosen' || (person.type === undefined && comp.settings.roleSelect.includes('organizer_chosen'))) {
+            $("#person").append("<button class='personTemp' onclick='choosePersonType(\"" + person.id + "\")'>Choose Type</button>");
+        }
+
+        if (person.solve === undefined && person.type === 'compete') {
+            $("#person").append("<button class='personTemp' onclick='choosePersonCup(\"" + person.id + "\")'>Choose Cup</button>");
+        }
+
+        $("#prompt").hide();
+        $("#person").show();
+    }
+
+    function choosePersonType(id) {
+        this.choosePersonTypeId = id;
+        setPrompt("choosePersonType", personTypeChosen);
+    }
+
+    function choosePersonCup(id) {
+        this.choosePersonCupId = id;
+        setPrompt("choosePersonCup", personCupChosen);
+    }
+
+    function personTypeChosen(setting, type) {
+        socket.send(JSON.stringify({uid:uid,eType:"choosePersonType",id:this.choosePersonTypeId,type:type}))
+    }
+
+    function personCupChosen(setting, cup) {
+        if (cup !== null && cup !== undefined && cup !== "")
+            socket.send(JSON.stringify({uid:uid,eType:"choosePersonCup",id:this.choosePersonCupId,cup:cup}))
+    }
+
+    function personChangeDisplayName(id) {
+        const name = prompt('New name?');
+        console.log(name);
+        if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"personChangeDisplayName",id:id,name:name}));
+    }
+
+    function closePerson() {
+        this.personClicked = null;
+        $("#person").hide();
+    }
+
+    function refreshActions() {
+        socket.send(JSON.stringify({uid:uid,eType:"regenerateActions"}))
+    }
+
+    function newCup() {
+        const newCupName = prompt('New cup name: ');
+        if (newCupName !== null && newCupName !== "") {
+            socket.send(JSON.stringify({uid:uid,eType:"newCup",name:newCupName}));
+        }
+    }
+
+    function clickCup(id) {
+        this.cupClicked = id;
+        $(".cupTemp").remove();
+        const cup = comp.cups[id];
+        $("#cupId").text("Id: " + cup.id);
+        $("#cupName").text("Name: " + cup.name);
+
+        $("#prompt").hide();
+        $("#cup").show();
+    }
+
+    function closeCup() {
+        this.cupClicked = null;
+        $("#cup").hide();
     }
 
     $(document).ready(main)
