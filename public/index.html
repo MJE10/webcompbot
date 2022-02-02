@@ -65,6 +65,13 @@
         font-size: large;
     }
 
+    iframe {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        align-self: flex-start;
+    }
+
 </style>
 <script>
 
@@ -135,6 +142,18 @@
                                     const button = newData.action.buttons[buttonIndex];
                                     if (button.value !== "done") body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
                                     else body.append("<button class='temp' onclick='clickedButton($(\"#numberBox\").val())'><h1>" + button.text + "</h1></button>");
+                                }
+                            } else if (newData.action.type === 'viewAndButtons') {
+                                $("#message").html(newData.action.message);
+                                body.append("<iframe id='iFrame1' class='temp' src='"+newData.action.link+"'>");
+                                let iFrame = document.getElementById( 'iFrame1' );
+                                setTimeout(() => {
+                                    iFrame.width  = iFrame.contentWindow.document.body.scrollWidth;
+                                    iFrame.height = iFrame.contentWindow.document.body.scrollHeight;
+                                }, 100);
+                                for (const buttonIndex in newData.action.buttons) {
+                                    const button = newData.action.buttons[buttonIndex];
+                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
                                 }
                             }
                             body.append("<div class=\"temp\"></div>");

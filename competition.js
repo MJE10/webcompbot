@@ -320,12 +320,13 @@ module.exports = class Competition {
                         }
                     } else if (person.status === this.STATUS.COMPETE.COMPLETE) {
                         let message = "You finished your average!<br>";
-                        const average = this.getPersonAverage(person.id);
-                        message += "Average: " + average.average;
-                        message += "<br>";
-                        for (const solveId in average.solves) message += "<br>" + average.solves[solveId].displayText;
+                        // const average = this.getPersonAverage(person.id);
+                        // message += "Average: " + average.average;
+                        // message += "<br>";
+                        // for (const solveId in average.solves) message += "<br>" + average.solves[solveId].displayText;
                         this.comp.people[uid].action = {
-                            type: "buttons",
+                            type: "viewAndButtons",
+                            link: this.comp.serverData.url + '/results/average?a=' + person.id,
                             message: message,
                             buttons: [
                                 { text: "Continue", value: "continue" },
@@ -820,47 +821,70 @@ module.exports = class Competition {
         let retAverage = {};
         let solves = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) {
-            const result = parseFloat(this.comp.solves[solveId].result);
-            if (this.comp.solves[solveId].penalty === 'dnf') {
-                const solve = this.comp.solves[solveId];
-                solves[solveId] = {
-                    id: solveId,
-                    result: solve.result,
-                    penalty: solve.penalty,
-                    displayText: "#" + counter++ + ") DNF",
-                    competitor: solve.competitor,
+            if (this.comp.solves[solveId].result !== undefined) {
+                const result = parseFloat(this.comp.solves[solveId].result);
+                if (this.comp.solves[solveId].penalty === 'dnf') {
+                    const solve = this.comp.solves[solveId];
+                    solves[solveId] = {
+                        id: solveId,
+                        result: solve.result,
+                        penalty: solve.penalty,
+                        displayText: "#" + counter++ + ") DNF",
+                        competitor: solve.competitor,
+                    }
+                    dnfCount++;
+                    // message += ;
+                } else {
+                    sum += result;
+                    const solve = this.comp.solves[solveId];
+                    solves[solveId] = {
+                        id: solveId,
+                        result: solve.result,
+                        penalty: solve.penalty,
+                        displayText: "#" + counter++ + ") " + result.toFixed(2)
+                            + (this.comp.solves[solveId].penalty === 'none' ? '' : " ("
+                                + this.comp.solves[solveId].penalty + ")"),
+                        competitor: solve.competitor,
+                    }
+                    nonDnfCounter++;
+                    max = Math.max(max, result);
+                    min = Math.min(min, result);
                 }
-                dnfCount++;
-                // message += ;
-            } else {
-                sum += result;
-                const solve = this.comp.solves[solveId];
-                solves[solveId] = {
-                    id: solveId,
-                    result: solve.result,
-                    penalty: solve.penalty,
-                    displayText: "#" + counter++ + ") " + result.toFixed(2)
-                        + (this.comp.solves[solveId].penalty === 'none' ? '' : " ("
-                            + this.comp.solves[solveId].penalty + ")"),
-                    competitor: solve.competitor,
-                }
-                nonDnfCounter++;
-                max = Math.max(max, result);
-                min = Math.min(min, result);
             }
         }
         if (sum !== 0) {
             let average = ((sum - max - min) / (counter - 3)).toFixed(2);
             // console.log(sum);
             // console.log(min);
-            if (dnfCount === 1) average = ((sum - min) / (counter - 3)).toFixed(2);
-            if (dnfCount >= 2) average = 'DNF';
+            if (counter < 1 + this.comp.solvesPerAverage) {
+                average = 'TBD (' + (counter-1) + '/' + this.comp.solvesPerAverage + ')';
+                retAverage.mean = 'TBD';
+            } else {
+                if (dnfCount === 1) average = ((sum - min) / (counter - 3)).toFixed(2);
+                else if (dnfCount >= 2) {
+                    if (this.comp.people[uid].type !== 'self_serve') average = 'DNF';
+                    else average = ((sum - min) / (counter - 3 - (dnfCount - 1))).toFixed(2);
+                }
+                retAverage.mean = (sum / nonDnfCounter).toFixed(2);
+            }
             retAverage.average = average;
-            retAverage.mean = (sum / nonDnfCounter).toFixed(2);
             // message += "<br><br>Average: " + average;
             // message += "<br>Mean: " + ;
         }
         retAverage.solves = solves;
         return retAverage;
+    }
+
+    changeSolveResult(id, result) {
+        try {
+            console.log('a');
+            this.comp.solves[id].result = parseFloat(result);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    changeSolvePenalty(id, penalty) {
+        if (penalty === 'none' || penalty === '+2' || penalty === 'dnf') this.comp.solves[id].penalty = penalty;
     }
 }

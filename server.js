@@ -150,6 +150,16 @@ module.exports = class WebServer {
                                 this.competition.editSetting(data.setting, data.value);
                             }
                         }
+                        if (data.eType === 'solveChangeResult') {
+                            if (isAdmin) {
+                                this.competition.changeSolveResult(data.id, data.result);
+                            }
+                        }
+                        if (data.eType === 'solveChangePenalty') {
+                            if (isAdmin) {
+                                this.competition.changeSolvePenalty(data.id, data.penalty);
+                            }
+                        }
                         if (data.eType === 'choosePersonType') {
                             if (isAdmin) {
                                 this.competition.choosePersonType(data.id, data.type);

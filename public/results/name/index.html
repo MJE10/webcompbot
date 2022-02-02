@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<h1 class="text">Average</h1>
+<h1 class="text">Averages</h1>
 
 <a href="../"><button><h1>Leaderboard</h1></button></a>
 
@@ -65,19 +65,25 @@
     }
 
     async function main2() {
-        let average = await (await fetch('/avgResults?p='+ new URLSearchParams(window.location.search).get('a'))).json();
+        let results = await (await fetch('/allResults')).json();
         let people = await (await fetch('/people')).json();
 
         const body = $('body');
+        const name = decodeURIComponent(new URLSearchParams(window.location.search).get('n'));
 
-        body.append('<p class="text"><a href="../name?n='
-            + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName+ '">'
-            + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName + '</a></p>');
-        body.append('<p class="text">Average: ' + average.average + '</p>');
-        body.append('<p class="text">Mean: ' + average.mean + '</p>');
+        body.append('<p class="text">' + name + '</p>');
 
-        for (const solveId in average.solves)
-            body.append('<a href="../solve?s=' + solveId + '"><p class="text">' + average.solves[solveId].displayText + '</p></a>');
+        let competitors = {};
+
+        for (const solveId in results) {
+            if (people[results[solveId].competitor].displayName === name) {
+                if (!(results[solveId].competitor in competitors)) {
+                    competitors[results[solveId].competitor] = true;
+                    let average = (await (await fetch('/avgResults?p='+ results[solveId].competitor)).json()).average;
+                    body.append('<a href="../average?a=' + results[solveId].competitor + '"><p class="text">' + average + '</p></a>');
+                }
+            }
+        }
     }
 
     $(document).ready(main);

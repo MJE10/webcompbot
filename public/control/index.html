@@ -77,6 +77,8 @@
     <h2 id="solveStatus">status</h2>
     <h2 id="solveResult">Result</h2>
     <h2 id="solvePenalty">Penalty</h2>
+    <button id="solveChangeResult" onclick="">Change Result</button>
+    <button id="solveChangePenalty" onclick="">Change Penalty</button>
     <button onclick="closeSolve()">Close</button>
 </div>
 
@@ -447,11 +449,14 @@
         $(".solveTemp").remove();
         const solveObj = comp.solves[id];
         $("#solveId").text("Id: " + solveObj.id);
-        $("#solveCup").text("Cup: " + solveObj.cup + " (" + gameInfo.cupNames[parseInt(solveObj.cup)].name + ")");
+        $("#solveCup").text("Cup: " + (solveObj.cup ? solveObj.cup : 'None') + " (" + (solveObj.cup ? gameInfo.cupNames[parseInt(solveObj.cup)].name : 'None') + ")");
         $("#solveCompetitor").text("Competitor: " + solveObj.competitor + " (" + gameInfo.people[solveObj.competitor].displayName + ")");
         $("#solveStatus").text("Status: " + solveObj.status);
         $("#solveResult").text("Result: " + solveObj.result);
         $("#solvePenalty").text("Penalty: " + solveObj.penalty);
+
+        $("#solveChangeResult").attr("onclick", "solveChangeResult(" + solveObj.id + ")");
+        $("#solveChangePenalty").attr("onclick", "solveChangePenalty(" + solveObj.id + ")");
 
         $("#prompt").hide();
         $("#solve").show();
@@ -499,7 +504,8 @@
             if (gameInfo["solves"][solveIndex] === undefined) {
                 gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
                 $("#solves").append("<div class='person' id='solve" + solve.id + "'  onclick='selectSolve(" + solve["id"] + ")'><p>"
-                    + solve.id + " (" + gameUpdate.people[solve.competitor].displayName + ")</p></div>");
+                    + solve.id + " (" + gameUpdate.people[solve.competitor].displayName
+                    + (solve.result === undefined ? '' : ', ' + solve.result) + ")</p></div>");
             } else {
                 // solve might have changed since last time?
                 gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
@@ -675,6 +681,17 @@
         if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"personChangeDisplayName",id:id,name:name}));
     }
 
+    function solveChangeResult(id) {
+        const result = prompt('New result?');
+        console.log(result);
+        if (result !== null) socket.send(JSON.stringify({uid:uid,eType:"solveChangeResult",id:id,result:result}));
+    }
+
+    function solveChangePenalty(id) {
+        const penalty = prompt('New penalty?');
+        if (penalty !== null) socket.send(JSON.stringify({uid:uid,eType:"solveChangePenalty",id:id,penalty:penalty}));
+    }
+
     function personDie(id) {
         if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"personDie",id:id}));
     }
@@ -708,7 +725,7 @@
 
         let solve = '?';
         for (const solveId in gameInfo.solvesInfo) {
-            if (gameInfo.solvesInfo[solveId].cup.toString() === cup.id.toString()) solve = solveId;
+            if (gameInfo.solvesInfo[solveId].cup && gameInfo.solvesInfo[solveId].cup.toString() === cup.id.toString()) solve = solveId;
         }
         $("#cupSolve").text("Solve: " + solve);
 
