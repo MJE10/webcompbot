@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>CompBot Web</title>
-    <script src="jquery-1.9.1.min.js"></script>
+    <script src="../jquery-1.9.1.min.js"></script>
     <!--    <link rel="stylesheet" href="style.css">-->
 </head>
 <body>
 
-<h1 id="message">We haven't finished this page yet!</h1>
+<h1 class="text">Leaderboard</h1>
 
 <a href="../"><button><h1>Home</h1></button></a>
-
-<div class="temp"></div>
 
 </body>
 <style>
@@ -26,9 +24,7 @@
     body {
         display: flex;
         flex-direction: column;
-        justify-content: space-around;
         align-items: center;
-        height: 100vh;
         margin: 0;
 
         background-color: #1368ce;
@@ -37,7 +33,7 @@
         color: white;
     }
 
-    #message {
+    .text {
         padding: 1em 1em 0 1em;
         margin: 0;
         white-space: pre-line;
@@ -53,18 +49,89 @@
         font-size: large;
     }
 
-    .images {
-        flex-shrink: 1;
-        margin: 5px;
+    .text, button {
+        margin: 10px;
     }
 
-    img {
-        display: inline-block;
-        width: min(40vw, min(60vh, 300px));
-    }
-
-    input {
-        font-size: large;
+    a {
+        color: white;
     }
 
 </style>
+<script>
+
+    function main() {
+        main2();
+    }
+
+    async function main2() {
+        let results = await (await fetch('/allResults')).json();
+        let people = await (await fetch('/people')).json();
+
+        let singles = arrayToHTML(orderByBestSingle(getBestSolvePerPerson(JSON.parse(JSON.stringify(results)), people)), people, await getAverages(results));
+
+        const body = $('body');
+        body.append('<div class="text">Pos #) Name (Avg/Single)</div>')
+        for (const singleId in singles) body.append(singles[singleId]);
+    }
+
+    // takes an object
+    function getBestSolvePerPerson(results, people) {
+        let solves = {};
+        while (Object.keys(results).length > 0) {
+            let bestSolve = results[Object.keys(results)[0]];
+            let currentPerson = people[bestSolve.competitor].displayName;
+            let solveIds = [];
+            for (const solveId in results) {
+                if (results[solveId].penalty !== 'dnf' && currentPerson === people[results[solveId].competitor].displayName) {
+                    solveIds.push(solveId);
+                    if (results[solveId].result < bestSolve.result) bestSolve = results[solveId];
+                }
+            }
+            solves[bestSolve.id] = JSON.parse(JSON.stringify(bestSolve));
+            for (const solveId in solveIds) delete results[solveIds[solveId]];
+        }
+        return solves;
+    }
+
+    // takes an object
+    async function getAverages(results) {
+        let avgs = {};
+        for (const solveId in results) {
+            if (!(results[solveId].competitor in avgs)) {
+                avgs[results[solveId].competitor] = (await (await fetch('/avgResults?p='+results[solveId].competitor)).json()).average;
+            }
+        }
+        return avgs;
+    }
+
+    // takes an object
+    function orderByBestSingle(results) {
+        let singles = [];
+        while (Object.keys(results).length > 0) {
+            let bestRemaining = results[Object.keys(results)[0]];
+            for (const solveId in results) {
+                if (results[solveId].penalty !== 'dnf' && results[solveId].result < bestRemaining.result) bestRemaining = results[solveId];
+            }
+            singles.push(JSON.parse(JSON.stringify(bestRemaining)));
+            delete results[bestRemaining.id];
+        }
+        return singles;
+    }
+
+    // takes an array
+    function arrayToHTML(results, people, averages) {
+        let html = [];
+        console.log(averages);
+        for (const i in results) {
+            html.push('<p class="text">'
+                + (parseInt(i)+1) + ') <a>' + people[results[i].competitor].displayName + '</a> '
+                + '(<a href="average?a=' + results[i].competitor + '">' + averages[results[i].competitor] + '</a> / '
+                + '<a href="solve?s=' + results[i].id + '">' + results[i].result + ')</a></p>')
+        }
+        return html;
+    }
+
+    $(document).ready(main);
+
+</script>

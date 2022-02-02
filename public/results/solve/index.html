@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CompBot Web</title>
+    <script src="../../jquery-1.9.1.min.js"></script>
+    <!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+
+<h1 class="text">Solve</h1>
+
+<a href="../"><button><h1>Leaderboard</h1></button></a>
+
+</body>
+<style>
+
+    * {
+        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+
+        background-color: #1368ce;
+
+        text-align: center;
+        color: white;
+    }
+
+    .text {
+        padding: 1em 1em 0 1em;
+        margin: 0;
+        white-space: pre-line;
+    }
+
+    button {
+        display: inline-block;
+        margin: 5px;
+    }
+
+    button h1 {
+        margin: 10px;
+        font-size: large;
+    }
+
+    .text, button {
+        margin: 10px;
+    }
+
+    a {
+        color: white;
+    }
+
+</style>
+<script>
+
+    function main() {
+        main2();
+    }
+
+    async function main2() {
+        let result = await (await fetch('/solveResults?s=' + new URLSearchParams(window.location.search).get('s'))).json();
+        let people = await (await fetch('/people')).json();
+
+        const body = $('body');
+
+        body.append('<p class="text">' + people[result.competitor].displayName + '</p>');
+        body.append('<p class="text">' + result.scramble + '</p>');
+        body.append('<p class="text">Result: ' + result.result + '</p>');
+        body.append('<p class="text">Penalty: ' + result.penalty.toUpperCase() + '</p>');
+    }
+
+    $(document).ready(main);
+
+</script>

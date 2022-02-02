@@ -94,7 +94,7 @@
                 try {
                     const newData = JSON.parse(event.data);
 
-                    if (newData.message !== undefined) $("#message").text(newData.message);
+                    if (newData.message !== undefined) $("#message").html(newData.message);
 
                     if (uid === null && newData.uid !== undefined) {
                         window.location.href = "/?uid=" + newData.uid;
@@ -130,7 +130,7 @@
                                 }
                             } else if (newData.action.type === 'numberBoxAndButtons') {
                                 $("#message").html(newData.action.message);
-                                body.append("<input type='number' class='temp' id='numberBox' min='0' inputmode='decimal'>");
+                                body.append("<input type='number' class='temp' id='numberBox' min='0' inputmode='decimal' autofocus>");
                                 for (const buttonIndex in newData.action.buttons) {
                                     const button = newData.action.buttons[buttonIndex];
                                     if (button.value !== "done") body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
@@ -173,6 +173,7 @@
             const body = $("body");
             $(".temp").remove();
             body.append('<a href="results"><button class="temp"><h1>Results</h1></button></a>');
+            body.append('<a href="join"><button class="temp"><h1>Join</h1></button></a>');
             body.append('<div class="temp"></div>');
         }
         else assignFunctions(socket);

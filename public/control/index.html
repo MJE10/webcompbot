@@ -22,6 +22,7 @@
         <div class="listType" id="run"><div class="listTypeHeader"><p>Runners</p></div></div>
         <div class="listType" id="judge"><div class="listTypeHeader"><p>Judges</p></div></div>
         <div class="listType" id="compete"><div class="listTypeHeader"><p>Competitors</p></div></div>
+        <div class="listType" id="self_serve"><div class="listTypeHeader"><p>Self Serve</p></div></div>
         <div class="listType" id="organizer_chosen"><div class="listTypeHeader"><p>Unassigned</p></div></div>
         <div class="listType" id="undefined"><div class="listTypeHeader"><p>Undefined</p></div></div>
     </div>
@@ -37,6 +38,8 @@
         <button onclick="newComp()">New Competition</button>
         <button id="refreshActions" onclick="refreshActions()">Regenerate Actions</button>
         <button onclick="newCup()">Add Cup</button>
+        <button id="toggleDeadButton" onclick="toggleDead()">Toggle Dead (Currently ?)</button>
+        <button id="setConfirmTimes" onclick="setConfirmTimes()">Confirm times (Currently ?)</button>
     </div>
 </div>
 
@@ -56,12 +59,25 @@
     <iframe id="personIframe" src="https://www.google.com" title="description"></iframe><br>
     <button onclick="closePerson()">Close</button>
     <button id="personChangeDisplayName" onclick="">Change Display Name</button>
+    <button id="personDie" onclick="">Die</button>
+    <button id="personNewToken" onclick="">New Token</button>
 </div>
 
 <div id="cup">
     <h2 id="cupId">id</h2>
     <h2 id="cupName">name</h2>
+    <h2 id="cupSolve">solve</h2>
     <button onclick="closeCup()">Close</button>
+</div>
+
+<div id="solve">
+    <h2 id="solveId">id</h2>
+    <h2 id="solveCup">cup</h2>
+    <h2 id="solveCompetitor">competitor</h2>
+    <h2 id="solveStatus">status</h2>
+    <h2 id="solveResult">Result</h2>
+    <h2 id="solvePenalty">Penalty</h2>
+    <button onclick="closeSolve()">Close</button>
 </div>
 
 </body>
@@ -172,6 +188,10 @@
         background-color: #a39cff;
     }
 
+    #self_serve div {
+        background-color: blue;
+    }
+
     #settingsContent {
     }
 
@@ -190,7 +210,7 @@
         margin: 10px;
     }
 
-    #person, #cup {
+    #person, #cup, #solve {
         position: absolute;
         display: inline-block;
         width: 60%;
@@ -202,7 +222,7 @@
         text-align: center;
     }
 
-    #person *, #cup *s {
+    #person *, #cup *s, #solve * {
         margin-top: 10px;
     }
 
@@ -249,6 +269,7 @@
                     { value: 'judge', text: 'judge' },
                     { value: 'compete', text: 'competitor' },
                     { value: 'organizer_chosen', text: 'organizer choice' },
+                    { value: 'self_serve', text: 'self serve' }
                 ]
             }]
         },
@@ -303,7 +324,8 @@
                     { value: 'scramble', text: 'scrambler' },
                     { value: 'run', text: 'runner' },
                     { value: 'judge', text: 'judge' },
-                    { value: 'compete', text: 'competitor' }
+                    { value: 'compete', text: 'competitor' },
+                    { value: 'self_serve', text: 'self serve'}
                 ]
             }]
         },
@@ -325,6 +347,7 @@
         $("#prompt").hide();
         $("#person").hide();
         $("#cup").hide();
+        $("#solve").hide();
 
         for (const optionIndex in settingsOptions) if (settingsOptions[optionIndex].showButton) {
             $("#settingsContent").append("<button id=\"set"+optionIndex+"\" onclick=\"setPrompt('"+optionIndex+"', settingEdited)\">Set "+settingsOptions[optionIndex].name+"</button>")
@@ -370,8 +393,10 @@
                             $("#prompt").show();
                         }
                         if (newData.eType === 'new link') {
-                            console.log('got new link')
                             window.location.href = newData.link;
+                        }
+                        if (newData.eType === 'alert') {
+                            alert(newData.message);
                         }
                     }
 
@@ -417,21 +442,31 @@
         $("#" + x + "Content").show();
     }
 
-    function selectPerson(id) {
-        console.log(id);
-    }
-
     function selectSolve(id) {
-        console.log(id);
+        this.solveClicked = id;
+        $(".solveTemp").remove();
+        const solveObj = comp.solves[id];
+        $("#solveId").text("Id: " + solveObj.id);
+        $("#solveCup").text("Cup: " + solveObj.cup + " (" + gameInfo.cupNames[parseInt(solveObj.cup)].name + ")");
+        $("#solveCompetitor").text("Competitor: " + solveObj.competitor + " (" + gameInfo.people[solveObj.competitor].displayName + ")");
+        $("#solveStatus").text("Status: " + solveObj.status);
+        $("#solveResult").text("Result: " + solveObj.result);
+        $("#solvePenalty").text("Penalty: " + solveObj.penalty);
+
+        $("#prompt").hide();
+        $("#solve").show();
     }
 
     function updateGame(gameUpdate) {
         comp = gameUpdate;
         if ($("#person").css("display") !== "none") this.clickPerson(this.personClicked);
         if ($("#cup").css("display") !== "none") this.clickCup(this.cupClicked);
+        if ($("#solve").css("display") !== "none") this.selectSolve(this.solveClicked);
         if (Object.keys(gameUpdate).length === 0) window.location.href = window.location.href.split("control/")[0] + "?" + window.location.href.split("?")[1];
         $("#renameCompButton").text('Rename Competition (Currently "' + gameUpdate.competitionName + '")');
         $("#setSolvesButton").text('Set solves per average (Currently ' + gameUpdate.solvesPerAverage + ')');
+        $("#toggleDeadButton").text('Toggle dead (Currently ' + gameUpdate.settings.showDead + ')');
+        $("#setConfirmTimes").text('Confirm times (Currently ' + gameUpdate.settings.confirmTimes + ')');
 
         for (const optionIndex in settingsOptions) if (settingsOptions[optionIndex].showButton) {
             $("#set"+optionIndex).text('Set ' + settingsOptions[optionIndex].name + " (Currently " + gameUpdate.settings[optionIndex] + ")")
@@ -442,6 +477,7 @@
 
         for (const personIndex in gameUpdate["people"]) {
             let person = gameUpdate["people"][personIndex];
+            if (gameUpdate.settings.showDead === 'false' && (person.status === 'dead' || person.status === 'competitorFinished' || person.status === 'competitorContinued')) continue;
             if (gameInfo["people"][personIndex] === undefined) {
                 gameInfo["people"][personIndex] = gameUpdate["people"][personIndex];
                 $("#" + (person["type"] === undefined ? 'undefined' : person["type"])).append("<div class='person' onclick='clickPerson(\""+person.id+"\")' id='person" + person.id + "' onclick='selectPerson(" + person["id"] + ")'><p>" + person["displayName"] + "</p></div>");
@@ -459,9 +495,11 @@
 
         for (const solveIndex in gameUpdate["solves"]) {
             let solve = gameUpdate["solves"][solveIndex];
+            if (gameUpdate.settings.showDead === 'false' && (solve.status === 'complete')) continue;
             if (gameInfo["solves"][solveIndex] === undefined) {
                 gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
-                $("#solves").append("<div class='person' id='solve" + solve.id + "'  onclick='selectSolve(" + solve["id"] + ")'><p>" + comp.cups[solve["cup"]].name + "</p></div>");
+                $("#solves").append("<div class='person' id='solve" + solve.id + "'  onclick='selectSolve(" + solve["id"] + ")'><p>"
+                    + solve.id + " (" + gameUpdate.people[solve.competitor].displayName + ")</p></div>");
             } else {
                 // solve might have changed since last time?
                 gameInfo["solves"][solveIndex] = gameUpdate["solves"][solve];
@@ -497,6 +535,9 @@
             toDeleteFromCups.push(cupIndex);
         }
         for (const cupIndexIndex in toDeleteFromCups) delete gameInfo.cups[toDeleteFromCups[cupIndexIndex]];
+
+        gameInfo.cupNames = gameUpdate.cups;
+        gameInfo.solvesInfo = gameUpdate.solves;
     }
 
     function saveComp() {
@@ -511,6 +552,14 @@
         socket.send(JSON.stringify({uid:uid,eType:"setSolvesPerAverage",number:parseInt(prompt('New number of solves?'))}));
     }
 
+    function toggleDead() {
+        socket.send(JSON.stringify({uid:uid,eType:"setShowDead"}));
+    }
+
+    function setConfirmTimes() {
+        socket.send(JSON.stringify({uid:uid,eType:"setConfirmTimes"}));
+    }
+
     function loadComp() {
         socket.send(JSON.stringify({uid:uid,eType:"loadComp"}));
     }
@@ -521,7 +570,8 @@
     }
 
     function newComp() {
-        socket.send(JSON.stringify({uid:uid,eType:"newComp",name:prompt('New name?')}));
+        const name = prompt('New name?');
+        if (name !== undefined && name !== null && name !== "") socket.send(JSON.stringify({uid:uid,eType:"newComp",name:name}));
     }
 
     function setPrompt(setting, callback) {
@@ -585,6 +635,8 @@
         $("#personStatus").text("Status: " + person.status);
         $("#personAction").text("Action: " + JSON.stringify(person.action));
         $("#personChangeDisplayName").attr("onclick", "personChangeDisplayName(\"" + person.id + "\")");
+        $("#personDie").attr("onclick", "personDie(\"" + person.id + "\")");
+        $("#personNewToken").attr("onclick", "personNewToken(\"" + person.id + "\")");
         if ($("#personIframe").attr("src") !== comp.serverData.url + "?uid=" + person.id) $("#personIframe").attr("src", comp.serverData.url + "?uid=" + person.id);
 
         if (person.type === 'organizer_chosen' || (person.type === undefined && comp.settings.roleSelect.includes('organizer_chosen'))) {
@@ -620,8 +672,15 @@
 
     function personChangeDisplayName(id) {
         const name = prompt('New name?');
-        console.log(name);
         if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"personChangeDisplayName",id:id,name:name}));
+    }
+
+    function personDie(id) {
+        if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"personDie",id:id}));
+    }
+
+    function personNewToken(id) {
+        if (name !== null) socket.send(JSON.stringify({uid:uid,eType:"newToken",user:id}));
     }
 
     function closePerson() {
@@ -647,6 +706,12 @@
         $("#cupId").text("Id: " + cup.id);
         $("#cupName").text("Name: " + cup.name);
 
+        let solve = '?';
+        for (const solveId in gameInfo.solvesInfo) {
+            if (gameInfo.solvesInfo[solveId].cup.toString() === cup.id.toString()) solve = solveId;
+        }
+        $("#cupSolve").text("Solve: " + solve);
+
         $("#prompt").hide();
         $("#cup").show();
     }
@@ -654,6 +719,11 @@
     function closeCup() {
         this.cupClicked = null;
         $("#cup").hide();
+    }
+
+    function closeSolve() {
+        this.solveClicked = null;
+        $("#solve").hide();
     }
 
     $(document).ready(main)

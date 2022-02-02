@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CompBot Web</title>
+    <script src="../jquery-1.9.1.min.js"></script>
+    <!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+
+<h1 id="message">Display name:</h1>
+<form id="my-form">
+<label>
+    <input id="username" type="text" placeholder="Johnny A." autofocus><br><br>
+</label>
+
+<a onclick="joinComp()"><button><h1>Join</h1></button></a>
+</form>
+<a href="token"><button><h1>Join with Token</h1></button></a>
+<a href="../"><button><h1>Home</h1></button></a>
+
+<div class="temp"></div>
+
+</body>
+<style>
+
+    * {
+        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+
+        background-color: #1368ce;
+
+        text-align: center;
+        color: white;
+    }
+
+    #message {
+        padding: 1em 1em 0 1em;
+        margin: 0;
+        white-space: pre-line;
+    }
+
+    button {
+        display: inline-block;
+        margin: 5px;
+    }
+
+    button h1 {
+        margin: 10px;
+        font-size: large;
+    }
+
+    .images {
+        flex-shrink: 1;
+        margin: 5px;
+    }
+
+    img {
+        display: inline-block;
+        width: min(40vw, min(60vh, 300px));
+    }
+
+    input {
+        font-size: large;
+    }
+
+</style>
+
+<script>
+    function main() {
+        if (getCookie('name') !== '') {
+            $("#username").val(getCookie('name'));
+            console.log(getCookie('name'));
+        }
+    }
+
+    async function joinComp() {
+        const name = $("#username").val();
+        if (name.length < 3) alert('Name must be 3 characters minimum!');
+        else if (!/^[\w\-\s]+$/.test(name)) alert('Can only contain letters, numbers, spaces, and dashes!');
+        else {
+            setCookie('name', name, 30);
+            const link = await (await fetch('/joinGame?name='+name)).json();
+            window.location.href = link.link;
+        }
+    }
+
+    function setCookie(cname, cvalue, exdays) {
+        const d = new Date();
+        d.setTime(d.getTime() + (exdays*24*60*60*1000));
+        let expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+
+    function getCookie(cname) {
+        let name = cname + "=";
+        let decodedCookie = decodeURIComponent(document.cookie);
+        let ca = decodedCookie.split(';');
+        for(let i = 0; i <ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+
+    function processForm(e) {
+        if (e.preventDefault) e.preventDefault();
+
+        // joinComp();
+
+        return false;
+    }
+
+    var form = document.getElementById('my-form');
+    if (form.attachEvent) {
+        form.attachEvent("submit", processForm);
+    } else {
+        form.addEventListener("submit", processForm);
+    }
+
+    $(document).ready(main);
+</script>

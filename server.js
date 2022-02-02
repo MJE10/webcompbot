@@ -17,6 +17,36 @@ module.exports = class WebServer {
 
         app.use(express.static('public'));
 
+        app.get('/joinGame', (req, res) => {
+            let param = req.url.split('?name=');
+            if (param.length === 2) {
+                // create a new link for this person and send it back
+                this.onNewUsers([decodeURIComponent(param[1])], (user, link) => {
+                    res.send({link:link});
+                })
+            } else res.send('ok');
+        });
+
+        app.get('/allResults', (req, res) => {
+            res.send(JSON.stringify(this.competition.getAllResults()));
+        });
+
+        app.get('/solveResults', (req, res) => {
+            res.send(JSON.stringify(this.competition.getSolveResults(req.url.split('?s=')[1])));
+        });
+
+        app.get('/avgResults', (req, res) => {
+            res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1])));
+        });
+
+        app.get('/userResults', (req, res) => {
+            res.send(JSON.stringify(this.competition.getUserResults(decodeURIComponent(req.url.split('?p=')[1]))));
+        });
+
+        app.get('/people', (req, res) => {
+            res.send(JSON.stringify(this.competition.comp.people));
+        });
+
         const server = app.listen(port, () => { console.log(`Example app listening at ${this.url}`) });
 
         const Server = require('ws').Server;
@@ -49,12 +79,27 @@ module.exports = class WebServer {
                                 this.sockets[uid] = ws;
                                 // register with competition
                                 const guild = await this.discordClient.client.guilds.fetch(this.discordClient.constants.GUILD_ID);
-                                const discordUser = await guild.members.fetch(user);
-                                this.onUidGenerated(uid, user, discordUser.displayName, discordUser.user.tag);
+                                try {
+                                    const discordUser = await guild.members.fetch(user);
+                                    this.onUidGenerated(uid, user, discordUser.displayName, discordUser.user.tag);
+                                } catch (DiscordAPIError) {
+                                    this.onUidGenerated(uid, user, user, user);
+                                }
                                 // send to socket
                                 ws.send(JSON.stringify({uid: uid, message: "Login successful!"}));
                             }
-                            if (!userFound) ws.send(JSON.stringify({message: "Token expired, please try again."}));
+                            for (const user in this.data.relogTokens) if (this.data.relogTokens[user] === data.token) {
+                                userFound = true;
+                                delete this.data.relogTokens[user];
+                                this.onUserClickedLink(user);
+
+                                this.sockets[user] = ws;
+                                // send to socket
+                                ws.send(JSON.stringify({uid: user, message: "Login successful!"}));
+                            }
+                            if (!userFound) ws.send(JSON.stringify({
+                                message: "Token expired, please try again.<br><br><button onclick='window.location.href=\"/\"'><h1>Home</h1></button>"
+                            }));
 
                             this.onDataChanged(this.data);
                         } else {
@@ -83,6 +128,12 @@ module.exports = class WebServer {
                         }
                         if (data.eType === 'setSolvesPerAverage') {
                             if (isAdmin) competition.setSolvesPerAverage(data.number);
+                        }
+                        if (data.eType === 'setShowDead') {
+                            if (isAdmin) competition.editSetting('showDead', (competition.comp.settings.showDead === 'true' ? 'false' : 'true'))
+                        }
+                        if (data.eType === 'setConfirmTimes') {
+                            if (isAdmin) competition.editSetting('confirmTimes', (competition.comp.settings.confirmTimes === 'true' ? 'false' : 'true'))
                         }
                         if (data.eType === 'newComp') {
                             if (isAdmin) competition.newComp(data.name);
@@ -119,14 +170,30 @@ module.exports = class WebServer {
                                 this.competition.personChangeDisplayName(data.id, data.name);
                             }
                         }
+                        if (data.eType === 'personDie') {
+                            if (isAdmin) {
+                                this.competition.personDie(data.id);
+                            }
+                        }
                         if (data.eType === 'newCup') {
                             if (isAdmin) {
                                 this.competition.newCup(data.name);
                             }
                         }
+                        if (data.eType === 'newToken') {
+                            if (isAdmin) {
+                                let token = Math.floor(Math.random()*899999 + 100000);
+                                while (token in this.data.tokens || token in this.data.relogTokens) token = Math.floor(Math.random()*899999 + 100000);
+
+                                this.data.relogTokens[data.user] = token.toString();
+                                this.onDataChanged(this.data);
+
+                                ws.send(JSON.stringify({eType: 'alert', message: token.toString()}));
+                            }
+                        }
 
                         this.updateAllSockets();
-                    } else ws.send(JSON.stringify({message: "Token expired, please try again."}));
+                    } else ws.send(JSON.stringify({message: "Token expired, please try again.<br><br><button onclick='window.location.href=\"/\"'><h1>Home</h1></button>"}));
                 } catch (e) {
                     console.log('error: '+e);
                     throw e;
@@ -139,21 +206,25 @@ module.exports = class WebServer {
         }.bind(this));
     }
 
-    onNewUsers(users) {
+    onNewUsers(users, callback=null) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
             const user = users[userIndex];
             // generate a token linked to their discord
             let token = Math.floor(Math.random()*899999 + 100000);
-            while (token in this.data.tokens) token = Math.floor(Math.random()*899999 + 100000);
+            while (token in this.data.tokens || token in this.data.relogTokens) token = Math.floor(Math.random()*899999 + 100000);
 
             // register the token
             this.data.tokens[user] = token.toString();
             this.onDataChanged(this.data);
 
-            // send the user the new link via a new channel
-            this.onUserLinkGenerated(user, this.url + '?t=' + token);
+            if (callback==null) {
+                // send the user the new link via a new channel
+                this.onUserLinkGenerated(user, this.url + '?t=' + token);
+            } else {
+                callback(user, this.url + '?t=' + token);
+            }
         }
     }
 
