@@ -1,6 +1,6 @@
-token.txt
 # Project exclude paths
 /node_modules/
 /.idea/
 /competitions/
 /public/images/
+.env

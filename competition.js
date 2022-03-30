@@ -752,7 +752,7 @@ module.exports = class Competition {
                 autoCupSelect: "false",
             },
             serverData: {
-                url: "http://eliaspectre.student.rit.edu",
+                url: process.env.URL,
                 port: 80,
                 UIDs: {},
                 tokens: {},

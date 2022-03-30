@@ -4,6 +4,8 @@ const fs = require('fs');
 const discord_js = require('discord.js');
 const { Client, Intents } = discord_js;
 
+require('dotenv').config();
+
 module.exports = class DiscordClient {
 
     constructor(dataInput) {
@@ -45,7 +47,7 @@ module.exports = class DiscordClient {
             await reaction.message.react("👍");
         });
 
-        this.client.login(fs.readFileSync("token.txt").toString()).then();
+        this.client.login(process.env.token).then();
     }
 
     async onUserLinkGenerated(user, link) {
