@@ -47,7 +47,7 @@ module.exports = class WebServer {
             res.send(JSON.stringify(this.competition.comp.people));
         });
 
-        const server = app.listen(port, () => { console.log(`Example app listening at ${this.url}`) });
+        const server = app.listen(port, () => { console.log(`Example app listening at ${this.url}, port ${port}`) });
 
         const Server = require('ws').Server;
 
