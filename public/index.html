@@ -6,6 +6,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>CompBot Web</title>
     <script src="jquery-1.9.1.min.js"></script>
+<!--    <script src="cstimer/kernel.js"></script>-->
+<!--    <script src="cstimer/myimage.js"></script>-->
     <!--    <link rel="stylesheet" href="style.css">-->
 </head>
 <body>
@@ -79,6 +81,8 @@
     let connected = false;
     let uid = null;
 
+    let lastAction = "";
+
     function main() {
 
         $("body").css('height', window.innerHeight);
@@ -113,50 +117,55 @@
                             newSocket.send(JSON.stringify({uid:uid, eType:'action subscribe'}));
                         } else if (newData.eType === 'action') {
                             const body = $("body");
-                            $(".temp").remove();
-                            if (newData.action.type === 'buttons') {
-                                $("#message").html(newData.action.message);
-                                for (const buttonIndex in newData.action.buttons) {
-                                    const button = newData.action.buttons[buttonIndex];
-                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                            if (lastAction !== JSON.stringify(newData.action)) {
+                                lastAction = JSON.stringify(newData.action);
+                                $(".temp").remove();
+                                if (newData.action.type === 'buttons') {
+                                    $("#message").html(newData.action.message);
+                                    for (const buttonIndex in newData.action.buttons) {
+                                        const button = newData.action.buttons[buttonIndex];
+                                        body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                    }
+                                } else if (newData.action.type === 'message') {
+                                    $("#message").html(newData.action.message);
+                                } else if (newData.action.type === 'newLink') {
+                                    $("#message").html(newData.action.message);
+                                    window.location.href = newData.action.link;
+                                } else if (newData.action.type === 'imagesAndButtons') {
+                                    $("#message").html(newData.action.message);
+                                    body.append("<div class='images temp' id='images'></div>");
+                                    // body.append("<canvas class='temp' id='canvas'>");
+                                    // nnnImage(3,'RUF')
+                                    for (const imgIndex in newData.action.images) {
+                                        $("#images").append("<img class='temp' src=\"" + newData.action.images[imgIndex] + "\">");
+                                    }
+                                    for (const buttonIndex in newData.action.buttons) {
+                                        const button = newData.action.buttons[buttonIndex];
+                                        body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                    }
+                                } else if (newData.action.type === 'numberBoxAndButtons') {
+                                    $("#message").html(newData.action.message);
+                                    body.append("<input type='number' class='temp' id='numberBox' min='0' inputmode='decimal' autofocus>");
+                                    for (const buttonIndex in newData.action.buttons) {
+                                        const button = newData.action.buttons[buttonIndex];
+                                        if (button.value !== "done") body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                        else body.append("<button class='temp' onclick='clickedButton($(\"#numberBox\").val())'><h1>" + button.text + "</h1></button>");
+                                    }
+                                } else if (newData.action.type === 'viewAndButtons') {
+                                    $("#message").html(newData.action.message);
+                                    body.append("<iframe id='iFrame1' class='temp' src='"+newData.action.link+"'>");
+                                    let iFrame = document.getElementById( 'iFrame1' );
+                                    setTimeout(() => {
+                                        iFrame.width  = iFrame.contentWindow.document.body.scrollWidth;
+                                        iFrame.height = iFrame.contentWindow.document.body.scrollHeight;
+                                    }, 100);
+                                    for (const buttonIndex in newData.action.buttons) {
+                                        const button = newData.action.buttons[buttonIndex];
+                                        body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
+                                    }
                                 }
-                            } else if (newData.action.type === 'message') {
-                                $("#message").html(newData.action.message);
-                            } else if (newData.action.type === 'newLink') {
-                                $("#message").html(newData.action.message);
-                                window.location.href = newData.action.link;
-                            } else if (newData.action.type === 'imagesAndButtons') {
-                                $("#message").html(newData.action.message);
-                                body.append("<div class='images temp' id='images'></div>");
-                                for (const imgIndex in newData.action.images) {
-                                    $("#images").append("<img class='temp' src=\"" + newData.action.images[imgIndex] + "\">");
-                                }
-                                for (const buttonIndex in newData.action.buttons) {
-                                    const button = newData.action.buttons[buttonIndex];
-                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
-                                }
-                            } else if (newData.action.type === 'numberBoxAndButtons') {
-                                $("#message").html(newData.action.message);
-                                body.append("<input type='number' class='temp' id='numberBox' min='0' inputmode='decimal' autofocus>");
-                                for (const buttonIndex in newData.action.buttons) {
-                                    const button = newData.action.buttons[buttonIndex];
-                                    if (button.value !== "done") body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
-                                    else body.append("<button class='temp' onclick='clickedButton($(\"#numberBox\").val())'><h1>" + button.text + "</h1></button>");
-                                }
-                            } else if (newData.action.type === 'viewAndButtons') {
-                                $("#message").html(newData.action.message);
-                                body.append("<iframe id='iFrame1' class='temp' src='"+newData.action.link+"'>");
-                                let iFrame = document.getElementById( 'iFrame1' );
-                                setTimeout(() => {
-                                    iFrame.width  = iFrame.contentWindow.document.body.scrollWidth;
-                                    iFrame.height = iFrame.contentWindow.document.body.scrollHeight;
-                                }, 100);
-                                for (const buttonIndex in newData.action.buttons) {
-                                    const button = newData.action.buttons[buttonIndex];
-                                    body.append("<button class='temp' onclick='clickedButton(\"" + button.value + "\")'><h1>" + button.text + "</h1></button>");
-                                }
+                                body.append("<div class=\"temp\"></div>");
                             }
-                            body.append("<div class=\"temp\"></div>");
                         }
                     }
 

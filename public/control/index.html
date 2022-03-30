@@ -39,7 +39,10 @@
         <button id="refreshActions" onclick="refreshActions()">Regenerate Actions</button>
         <button onclick="newCup()">Add Cup</button>
         <button id="toggleDeadButton" onclick="toggleDead()">Toggle Dead (Currently ?)</button>
+        <button id="togglePartner" onclick="togglePartner()">Partner Mode (Currently ?)</button>
         <button id="setConfirmTimes" onclick="setConfirmTimes()">Confirm times (Currently ?)</button>
+        <button id="setShowCompetitorAsCupName" onclick="setShowCompetitorAsCupName()">Show competitor as cup name (Currently ?)</button>
+        <button id="setAutoCupSelect" onclick="setAutoCupSelect()">Auto cup select (Currently ?)</button>
     </div>
 </div>
 
@@ -471,7 +474,10 @@
         $("#renameCompButton").text('Rename Competition (Currently "' + gameUpdate.competitionName + '")');
         $("#setSolvesButton").text('Set solves per average (Currently ' + gameUpdate.solvesPerAverage + ')');
         $("#toggleDeadButton").text('Toggle dead (Currently ' + gameUpdate.settings.showDead + ')');
+        $("#togglePartner").text('Partner Mode (Currently ' + gameUpdate.settings.partnerMode + ')');
         $("#setConfirmTimes").text('Confirm times (Currently ' + gameUpdate.settings.confirmTimes + ')');
+        $("#setShowCompetitorAsCupName").text('Show competitor as cup name (Currently ' + gameUpdate.settings.showCompetitorAsCupName + ')');
+        $("#setAutoCupSelect").text('Auto cup select (Currently ' + gameUpdate.settings.autoCupSelect + ')');
 
         for (const optionIndex in settingsOptions) if (settingsOptions[optionIndex].showButton) {
             $("#set"+optionIndex).text('Set ' + settingsOptions[optionIndex].name + " (Currently " + gameUpdate.settings[optionIndex] + ")")
@@ -562,8 +568,20 @@
         socket.send(JSON.stringify({uid:uid,eType:"setShowDead"}));
     }
 
+    function togglePartner() {
+        socket.send(JSON.stringify({uid:uid,eType:"togglePartner"}));
+    }
+
     function setConfirmTimes() {
         socket.send(JSON.stringify({uid:uid,eType:"setConfirmTimes"}));
+    }
+
+    function setShowCompetitorAsCupName() {
+        socket.send(JSON.stringify({uid:uid,eType:"setShowCompetitorAsCupName"}));
+    }
+
+    function setAutoCupSelect() {
+        socket.send(JSON.stringify({uid:uid,eType:"autoCupSelect"}));
     }
 
     function loadComp() {

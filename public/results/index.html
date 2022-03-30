@@ -66,17 +66,21 @@
         let results = await (await fetch('/allResults')).json();
         let people = await (await fetch('/people')).json();
 
-        let singles = [];
-        if (!(new URLSearchParams(window.location.search).get('s'))) {
-            singles = arrayToHTML(orderByBestAverage(getBestSolvePerPerson(JSON.parse(JSON.stringify(results)), people), await getAverages(results)), people, await getAverages(results));
+        const urlSearchParams = new URLSearchParams(window.location.search);
+        let event = urlSearchParams.get('event');
+        if (event == null || event === "") event = "three";
+
+        let singles;
+        if (!(urlSearchParams.get('s'))) {
+            singles = arrayToHTML(orderByBestAverage(getBestSolvePerPerson(JSON.parse(JSON.stringify(results)), people, event), await getAverages(results, event)), people, await getAverages(results, event));
         } else {
-            singles = arrayToHTML(orderByBestSingle(getBestSolvePerPerson(JSON.parse(JSON.stringify(results)), people)), people, await getAverages(results));
+            singles = arrayToHTML(orderByBestSingle(getBestSolvePerPerson(JSON.parse(JSON.stringify(results)), people, event)), people, await getAverages(results, event));
         }
 
         const body = $('body');
         $(".text").remove();
         $("button").remove();
-        body.append('<h1 class="text">Leaderboard</h1>\n' +
+        body.append('<h1 class="text">Leaderboard: ' +{"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[event]+ '</h1>\n' +
             '<a href="../"><button><h1>Home</h1></button></a>');
         body.append('<div class="text">Pos #) Name (<a href="../results">Avg</a>/<a href="../results?s=1">Single</a>)</div>')
         for (const singleId in singles) body.append(singles[singleId]);
@@ -85,15 +89,17 @@
     }
 
     // takes an object
-    function getBestSolvePerPerson(results, people) {
+    function getBestSolvePerPerson(results, people, event) {
         let solves = {};
         let bestSolves = {};
         console.log(results);
         for (const solveId in results) {
             if (results[solveId].penalty !== 'dnf') {
-                if (!(people[results[solveId].competitor].displayName in bestSolves)
-                    || parseFloat(results[solveId].result) < parseFloat(bestSolves[people[results[solveId].competitor].displayName].result)) {
-                    bestSolves[people[results[solveId].competitor].displayName] = results[solveId];
+                if (results[solveId].event === event) {
+                    if (!(people[results[solveId].competitor].displayName in bestSolves)
+                        || parseFloat(results[solveId].result) < parseFloat(bestSolves[people[results[solveId].competitor].displayName].result)) {
+                        bestSolves[people[results[solveId].competitor].displayName] = results[solveId];
+                    }
                 }
             }
         }
@@ -102,11 +108,14 @@
     }
 
     // takes an object
-    async function getAverages(results) {
+    async function getAverages(results, event) {
         let avgs = {};
         for (const solveId in results) {
             if (!(results[solveId].competitor in avgs)) {
-                avgs[results[solveId].competitor] = (await (await fetch('/avgResults?p='+results[solveId].competitor)).json()).average;
+                const newAvg = (await (await fetch('/avgResults?p='+results[solveId].competitor+'&e='+event)).json()).average
+                if (newAvg) {
+                    avgs[results[solveId].competitor] = newAvg;
+                }
             }
         }
         return avgs;
@@ -118,7 +127,7 @@
         while (Object.keys(results).length > 0) {
             let bestRemaining = results[Object.keys(results)[0]];
             for (const solveId in results) {
-                if (results[solveId].penalty !== 'dnf' && results[solveId].result < bestRemaining.result) bestRemaining = results[solveId];
+                if (results[solveId].penalty !== 'dnf' && parseFloat(results[solveId].result) < parseFloat(bestRemaining.result)) bestRemaining = results[solveId];
             }
             if (bestRemaining.penalty !== 'dnf') singles.push(JSON.parse(JSON.stringify(bestRemaining)));
             delete results[bestRemaining.id];

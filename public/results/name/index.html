@@ -77,10 +77,10 @@
 
         for (const solveId in results) {
             if (people[results[solveId].competitor].displayName === name) {
-                if (!(results[solveId].competitor in competitors)) {
-                    competitors[results[solveId].competitor] = true;
-                    let average = (await (await fetch('/avgResults?p='+ results[solveId].competitor)).json()).average;
-                    body.append('<a href="../average?a=' + results[solveId].competitor + '"><p class="text">' + average + '</p></a>');
+                if (!(results[solveId].competitor + "///event=" + results[solveId].event in competitors)) {
+                    competitors[results[solveId].competitor + "///event=" + results[solveId].event] = true;
+                    let average = (await (await fetch('/avgResults?p='+ results[solveId].competitor + "&e=" + results[solveId].event)).json()).average;
+                    body.append('<a href="../average?a=' + results[solveId].competitor + '&e='+results[solveId].event+'"><p class="text">' + average + ': ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[results[solveId].event] + '</p></a>');
                 }
             }
         }

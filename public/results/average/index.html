@@ -65,7 +65,7 @@
     }
 
     async function main2() {
-        let average = await (await fetch('/avgResults?p='+ new URLSearchParams(window.location.search).get('a'))).json();
+        let average = await (await fetch('/avgResults?p='+ new URLSearchParams(window.location.search).get('a')+'&e='+new URLSearchParams(window.location.search).get('e'))).json();
         let people = await (await fetch('/people')).json();
 
         const body = $('body');
@@ -73,6 +73,7 @@
         body.append('<p class="text"><a href="../name?n='
             + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName+ '">'
             + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName + '</a></p>');
+        body.append('<p class="text">Event: ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[new URLSearchParams(window.location.search).get('e')] + '</p>');
         body.append('<p class="text">Average: ' + average.average + '</p>');
         body.append('<p class="text">Mean: ' + average.mean + '</p>');
 

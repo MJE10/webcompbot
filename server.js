@@ -36,7 +36,7 @@ module.exports = class WebServer {
         });
 
         app.get('/avgResults', (req, res) => {
-            res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1])));
+            res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1].split('&e=')[0],req.url.split('?p=')[1].split('&e=')[1])));
         });
 
         app.get('/userResults', (req, res) => {
@@ -132,8 +132,17 @@ module.exports = class WebServer {
                         if (data.eType === 'setShowDead') {
                             if (isAdmin) competition.editSetting('showDead', (competition.comp.settings.showDead === 'true' ? 'false' : 'true'))
                         }
+                        if (data.eType === 'togglePartner') {
+                            if (isAdmin) competition.editSetting('partnerMode', (competition.comp.settings.partnerMode === 'true' ? 'false' : 'true'))
+                        }
                         if (data.eType === 'setConfirmTimes') {
                             if (isAdmin) competition.editSetting('confirmTimes', (competition.comp.settings.confirmTimes === 'true' ? 'false' : 'true'))
+                        }
+                        if (data.eType === 'setShowCompetitorAsCupName') {
+                            if (isAdmin) competition.editSetting('showCompetitorAsCupName', (competition.comp.settings.showCompetitorAsCupName === 'true' ? 'false' : 'true'))
+                        }
+                        if (data.eType === 'autoCupSelect') {
+                            if (isAdmin) competition.editSetting('autoCupSelect', (competition.comp.settings.autoCupSelect === 'true' ? 'false' : 'true'))
                         }
                         if (data.eType === 'newComp') {
                             if (isAdmin) competition.newComp(data.name);

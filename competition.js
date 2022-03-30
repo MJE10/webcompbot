@@ -2,6 +2,7 @@ const fs = require('fs');
 const DiscordClient = require("./discordClient");
 const WebServer = require("./server");
 const generateScramble = require("scramble-generator").default;
+const scrambler = new (require("./scrambler"));
 
 module.exports = class Competition {
 
@@ -22,11 +23,13 @@ module.exports = class Competition {
         },
         COMPETE: {
             CHOOSE_CUP: "chooseCup",
+            CHOOSE_PUZZLE: "choosePuzzle",
             COMPETING: "competing",
             COMPLETE: "competitorFinished",
             CONTINUE: "competitorContinued",
         },
         SELF_SERVE: {
+            CHOOSE_PUZZLE: "self_choosePuzzle",
             SCRAMBLING: "self_scramble",
             SOLVING: "self_solving",
             ENTER_PENALTY: "self_enterPenalty",
@@ -194,13 +197,42 @@ module.exports = class Competition {
                         }
                     }
                 } else if (person.type === 'self_serve') {
-                    if (person.status === this.STATUS.SELF_SERVE.SCRAMBLING) {
+                    if (person.status === this.STATUS.SELF_SERVE.CHOOSE_PUZZLE) {
+                        let eventButtons = [];
+                        for (let event = 0; event < this.comp.settings.events.length; event++) {
+                            let name;
+                            switch (this.comp.settings.events[event]) {
+                                case "three":
+                                    name = "3x3";
+                                    break;
+                                case "two":
+                                    name = "2x2";
+                                    break;
+                                case "four":
+                                    name = "4x4";
+                                    break;
+                                case "pyra":
+                                    name = "pyraminx";
+                                    break;
+                                case "apple":
+                                    name = "apple";
+                                    break;
+                            }
+                            eventButtons.push({ text: name, value: this.comp.settings.events[event] });
+                        }
+                        this.comp.people[uid].action = {
+                            type: "buttons",
+                            message: "Please choose the event",
+                            buttons: eventButtons
+                        }
+                    } else if (person.status === this.STATUS.SELF_SERVE.SCRAMBLING) {
                         const scramble = this.comp.solves[this.comp.people[uid].solve].scramble;
                         this.comp.people[uid].action = {
                             type: "imagesAndButtons",
                             message: "Scramble: " + scramble,
-                            images: ['http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble,
-                                'http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble + 'z2y'],
+                            // images: ['http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble,
+                            //     'http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble + 'z2y'],
+                            images: ['images/'+scramble+'.svg'],
                             buttons: [
                                 { text: "Done", value: "done" },
                                 { text: "Quit", value: "quit" },
@@ -266,11 +298,54 @@ module.exports = class Competition {
                                 buttons: buttons,
                             }
                         } else {
+                            if (this.comp.settings.autoCupSelect === 'true') {
+                                // try to find an empty cup
+                                for (const cupIndex in this.comp["cups"]) {
+                                    let cup = this.comp["cups"][cupIndex];
+                                    let cupTaken = false;
+                                    for (const solveIndex in this.comp["solves"]) if (this.comp["solves"][solveIndex].status !== 'complete'
+                                        && this.comp["solves"][solveIndex].cup === cupIndex)
+                                        cupTaken = true;
+                                    if (!cupTaken) {
+                                        this.click(uid, {value:cupIndex});
+                                        repeat = true;
+                                        break;
+                                    }
+                                }
+                            }
                             this.comp.people[uid].action = {
                                 type: "buttons",
                                 message: "Please wait for organizer to assign you a cup...",
                                 buttons: [{ text: "Cancel", value: "cancel" }]
                             }
+                        }
+                    } else if (person.status === this.STATUS.COMPETE.CHOOSE_PUZZLE) {
+                        let eventButtons = [];
+                        for (let event = 0; event < this.comp.settings.events.length; event++) {
+                            let name;
+                            switch (this.comp.settings.events[event]) {
+                                case "three":
+                                    name = "3x3";
+                                    break;
+                                case "two":
+                                    name = "2x2";
+                                    break;
+                                case "four":
+                                    name = "4x4";
+                                    break;
+                                case "pyra":
+                                    name = "pyraminx";
+                                    break;
+                                case "apple":
+                                    name = "apple";
+                                    break;
+                            }
+                            eventButtons.push({ text: name, value: this.comp.settings.events[event] });
+                        }
+                        this.comp.people[uid].action = {
+                            type: "buttons",
+                            message: "Please choose the event",
+                            buttons: eventButtons
                         }
                     } else if (person.status === this.STATUS.COMPETE.COMPETING) {
                         const solve = this.comp.solves[person.solve];
@@ -292,8 +367,8 @@ module.exports = class Competition {
                         } else if (solve.status === this.STATUS.SOLVE.JUDGING) {
                             let message = "Your judge is ready! Please report to ";
                             for (const judgeId in this.comp.people) {
-                                if (this.comp.people[judgeId].status === this.STATUS.JUDGE.JUDGING
-                                    || this.comp.people[judgeId].status === this.STATUS.JUDGE.ENTER_PENALTY
+                                if ((this.comp.people[judgeId].status === this.STATUS.JUDGE.JUDGING
+                                    || this.comp.people[judgeId].status === this.STATUS.JUDGE.ENTER_PENALTY)
                                     && this.comp.people[judgeId].solve.toString() === person.solve.toString()) {
                                     message += this.comp.people[judgeId].displayName;
                                 }
@@ -324,9 +399,11 @@ module.exports = class Competition {
                         // message += "Average: " + average.average;
                         // message += "<br>";
                         // for (const solveId in average.solves) message += "<br>" + average.solves[solveId].displayText;
+                        let event = "three";
+                        for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) event = this.comp.solves[solveId].event;
                         this.comp.people[uid].action = {
                             type: "viewAndButtons",
-                            link: this.comp.serverData.url + '/results/average?a=' + person.id,
+                            link: this.comp.serverData.url + '/results/average?a=' + person.id + '&e=' + event,
                             message: message,
                             buttons: [
                                 { text: "Continue", value: "continue" },
@@ -355,11 +432,14 @@ module.exports = class Competition {
                     let buttons = [];
                     if (this.comp.settings.volunteersUnited === "true") {
                         const types = ['scramble', 'judge', 'run'];
-                        const gerunds = ['scrambling', 'judging', 'running'];
+                        const gerunds = ['to scramble', 'to judge', 'to run'];
                         for (const typeIndex in types)
                             for (const solveIndex in possibleVolunteerSolves[types[typeIndex]]) {
                                 if (this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup]) {
                                     let text = this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup].name;
+                                    if (this.comp.settings.showCompetitorAsCupName === 'true') {
+                                        text = this.comp.people[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].competitor].displayName;
+                                    }
                                     if (this.comp.settings.volunteersUnited) text += " (" + gerunds[typeIndex] + ")";
                                     buttons.push({ text: text,
                                         value: possibleVolunteerSolves[types[typeIndex]][solveIndex] });
@@ -389,11 +469,12 @@ module.exports = class Competition {
                     this.comp.people[uid].action = {
                         type: "imagesAndButtons",
                         message: "Scramble for " + this.comp.cups[this.comp.solves[this.comp.people[uid].solve].cup].name + "&#10;&#13;" + scramble,
-                        images: ['http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble,
-                            'http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble + 'z2y'],
+                        // images: ['http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble,
+                        //     'http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble + 'z2y'],
+                        images: ['images/'+scramble+'.svg'],
                         buttons: [
-                            { text: "Cancel", value: "cancel" },
                             { text: "Done", value: "done" },
+                            { text: "Cancel", value: "cancel" }
                         ]
                     }
                 } else if (person.status === this.STATUS.RUN.RUNNING) {
@@ -404,8 +485,8 @@ module.exports = class Competition {
                         type: "buttons",
                         message: message,
                         buttons: [
-                            { text: "Cancel", value: "cancel" },
                             { text: "Done", value: "done" },
+                            { text: "Cancel", value: "cancel" }
                         ]
                     }
                 } else if (person.status === this.STATUS.JUDGE.JUDGING) {
@@ -414,8 +495,8 @@ module.exports = class Competition {
                         type: "numberBoxAndButtons",
                         message: message,
                         buttons: [
-                            { text: "Cancel", value: "cancel" },
                             { text: "Done", value: "done" },
+                            { text: "Cancel", value: "cancel" }
                         ]
                     }
                 } else if (person.status === this.STATUS.JUDGE.ENTER_PENALTY) {
@@ -467,7 +548,17 @@ module.exports = class Competition {
                 this.comp.solves[person.solve].penalty = 'dnf';
                 this.comp.people[uid].status = this.STATUS.DEAD;
             } else {
-                if (person.status === this.STATUS.SELF_SERVE.SCRAMBLING && value.value === 'done') {
+                if (person.status === this.STATUS.SELF_SERVE.CHOOSE_PUZZLE) {
+                    if (value.value === 'cancel') {
+                        this.comp.people[uid].type = undefined;
+                        this.comp.people[uid].status = this.STATUS.ROLE_SELECT;
+                    }
+                    if (this.comp.settings.events.includes(value.value)) {
+                        this.choosePersonCupHelper(uid, null, value.value);
+                        this.comp.people[uid].status = this.STATUS.SELF_SERVE.SCRAMBLING;
+                        this.comp.solves[this.comp.people[uid].solve].status = this.STATUS.SOLVE.SELF_SERVE;
+                    }
+                } else if (person.status === this.STATUS.SELF_SERVE.SCRAMBLING && value.value === 'done') {
                     person.status = this.STATUS.SELF_SERVE.SOLVING;
                 } else if (person.status === this.STATUS.SELF_SERVE.SOLVING && !isNaN(parseInt(value.value))) {
                     this.comp.solves[person.solve].result = value.value;
@@ -477,8 +568,7 @@ module.exports = class Competition {
                         this.comp.solves[person.solve].penalty = value.value;
 
                         this.comp.solves[person.solve].status = this.STATUS.SOLVE.COMPLETE;
-                        this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup);
-                        this.comp.people[uid].status = this.STATUS.SELF_SERVE.SCRAMBLING;
+                        this.comp.people[uid].status = this.STATUS.SELF_SERVE.CHOOSE_PUZZLE;
                     }
                 } else if (person.status === this.STATUS.DEAD) {
                     this.comp.people[uid].action = {
@@ -494,19 +584,33 @@ module.exports = class Competition {
                     this.comp.people[uid].type = undefined;
                     this.comp.people[uid].status = this.STATUS.ROLE_SELECT;
                 }
-                else this.choosePersonCupHelper(uid, value.value);
+                else {
+                    this.comp.people[uid].temp_cup = value.value;
+                    this.comp.people[uid].status = this.STATUS.COMPETE.CHOOSE_PUZZLE;
+                }
+            } else if (person.status === this.STATUS.COMPETE.CHOOSE_PUZZLE) {
+                if (value.value === 'cancel') {
+                    this.comp.people[uid].type = undefined;
+                    this.comp.people[uid].status = this.STATUS.ROLE_SELECT;
+                }
+                if (this.comp.settings.events.includes(value.value)) {
+                    this.choosePersonCupHelper(uid, this.comp.people[uid].temp_cup, value.value);
+                }
             } else if (this.comp.solves[person.solve].status === this.STATUS.SOLVE.AWAITING_CONFIRMATION) {
                 if (value.value === "yes") {
                     this.comp.solves[person.solve].status = this.STATUS.SOLVE.COMPLETE;
+                    let partnerId = null;
                     for (const judgeId in this.comp.people) if (this.comp.people[judgeId].status === this.STATUS.JUDGE.AWAITING_CONFIRMATION
                         && this.comp.people[judgeId].solve.toString() === person.solve.toString()) {
                         this.comp.people[judgeId].status = this.STATUS.WAITING;
+                        partnerId = judgeId;
                     }
                     // count the solves they've already done
                     let solveCount = 0;
                     for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) solveCount++;
                     if (solveCount < this.comp.solvesPerAverage) {
-                        this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup);
+                        this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup, this.comp.solves[person.solve].event);
+                        if (this.comp.settings.partnerMode === 'true') this.click(partnerId, {value:this.comp.people[uid].solve});
                     } else {
                         this.comp.people[uid].status = this.STATUS.COMPETE.COMPLETE;
                     }
@@ -564,7 +668,12 @@ module.exports = class Competition {
                     this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_JUDGE;
                 }
                 this.comp.people[uid].status = this.STATUS.WAITING;
+                let oldSolve = this.comp.people[uid].solve;
                 delete this.comp.people[uid].solve;
+                if (this.comp.settings.partnerMode === 'true') {
+                    console.log('clicked');
+                    this.click(uid, {value:oldSolve});
+                }
             } else if (person.solve !== undefined && value.value === "cancel") {
                 this.comp.people[uid].status = this.STATUS.WAITING;
                 delete this.comp.people[uid].solve;
@@ -632,14 +741,18 @@ module.exports = class Competition {
             cups: {},
             settings: {
                 roleSelect: ["organizer_chosen"],
+                events: ["three"], // ["three", "two", "four", "pyra", "apple"]
                 cupNumbers: "chosen",
                 runnerEnabled: "false",
                 volunteersUnited: "true",
                 showDead: "false",
-                confirmTimes: "true"
+                partnerMode: "false",
+                confirmTimes: "true",
+                showCompetitorAsCupName: "false",
+                autoCupSelect: "false",
             },
             serverData: {
-                url: "http://elia.student.rit.edu",
+                url: "http://eliaspectre.student.rit.edu",
                 port: 80,
                 UIDs: {},
                 tokens: {},
@@ -677,9 +790,7 @@ module.exports = class Competition {
         if (person.type === 'compete') {
             this.comp.people[uid].status = this.STATUS.COMPETE.CHOOSE_CUP;
         } else if (person.type === 'self_serve') {
-            this.choosePersonCupHelper(uid, null);
-            this.comp.people[uid].status = this.STATUS.SELF_SERVE.SCRAMBLING;
-            this.comp.solves[this.comp.people[uid].solve].status = this.STATUS.SOLVE.SELF_SERVE;
+            this.comp.people[uid].status = this.STATUS.SELF_SERVE.CHOOSE_PUZZLE;
         } else {
             this.comp.people[uid].status = this.STATUS.WAITING;
         }
@@ -688,10 +799,10 @@ module.exports = class Competition {
     }
 
     choosePersonCup(uid, cup) {
-        if (this.comp.people[uid].type === 'compete') this.choosePersonCupHelper(uid, cup);
+        if (this.comp.people[uid].type === 'compete') this.choosePersonCupHelper(uid, cup, "three");
     }
 
-    choosePersonCupHelper(uid, cup) {
+    choosePersonCupHelper(uid, cup, event) {
         let maxSolveId = 0;
         for (const solveIndex in this.comp.solves) if (parseInt(this.comp.solves[solveIndex].id) > maxSolveId)
             maxSolveId = parseInt(this.comp.solves[solveIndex].id);
@@ -699,9 +810,10 @@ module.exports = class Competition {
         this.comp.solves[nextSolveId] = {
             id: nextSolveId,
             cup: cup,
+            event: event,
             competitor: uid,
             status: this.STATUS.SOLVE.AWAITING_SCRAMBLE,
-            scramble: generateScramble(),
+            scramble: scrambler.generateScramble(event),
         }
         this.comp.people[uid].solve = nextSolveId;
         this.comp.people[uid].status = this.STATUS.COMPETE.COMPETING;
@@ -736,7 +848,7 @@ module.exports = class Competition {
             let solveCount = 0;
             for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) solveCount++;
             while (solveCount < this.comp.solvesPerAverage) {
-                this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup);
+                this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup, this.comp.solves[person.solve].event);
                 this.comp.solves[person.solve].status = this.STATUS.SOLVE.COMPLETE;
                 this.comp.solves[person.solve].result = 0;
                 this.comp.solves[person.solve].penalty = 'dnf';
@@ -811,7 +923,7 @@ module.exports = class Competition {
         return solves;
     }
 
-    getPersonAverage(uid) {
+    getPersonAverage(uid, event) {
         let sum = 0;
         let max = 0;
         let min = 999999999999999999999999;
@@ -821,34 +933,36 @@ module.exports = class Competition {
         let retAverage = {};
         let solves = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) {
-            if (this.comp.solves[solveId].result !== undefined) {
-                const result = parseFloat(this.comp.solves[solveId].result);
-                if (this.comp.solves[solveId].penalty === 'dnf') {
-                    const solve = this.comp.solves[solveId];
-                    solves[solveId] = {
-                        id: solveId,
-                        result: solve.result,
-                        penalty: solve.penalty,
-                        displayText: "#" + counter++ + ") DNF",
-                        competitor: solve.competitor,
+            if (this.comp.solves[solveId].event === event) {
+                if (this.comp.solves[solveId].result !== undefined) {
+                    const result = parseFloat(this.comp.solves[solveId].result);
+                    if (this.comp.solves[solveId].penalty === 'dnf') {
+                        const solve = this.comp.solves[solveId];
+                        solves[solveId] = {
+                            id: solveId,
+                            result: solve.result,
+                            penalty: solve.penalty,
+                            displayText: "#" + counter++ + ") DNF",
+                            competitor: solve.competitor,
+                        }
+                        dnfCount++;
+                        // message += ;
+                    } else {
+                        sum += result;
+                        const solve = this.comp.solves[solveId];
+                        solves[solveId] = {
+                            id: solveId,
+                            result: solve.result,
+                            penalty: solve.penalty,
+                            displayText: "#" + counter++ + ") " + result.toFixed(2)
+                                + (this.comp.solves[solveId].penalty === 'none' ? '' : " ("
+                                    + this.comp.solves[solveId].penalty + ")"),
+                            competitor: solve.competitor,
+                        }
+                        nonDnfCounter++;
+                        max = Math.max(max, result);
+                        min = Math.min(min, result);
                     }
-                    dnfCount++;
-                    // message += ;
-                } else {
-                    sum += result;
-                    const solve = this.comp.solves[solveId];
-                    solves[solveId] = {
-                        id: solveId,
-                        result: solve.result,
-                        penalty: solve.penalty,
-                        displayText: "#" + counter++ + ") " + result.toFixed(2)
-                            + (this.comp.solves[solveId].penalty === 'none' ? '' : " ("
-                                + this.comp.solves[solveId].penalty + ")"),
-                        competitor: solve.competitor,
-                    }
-                    nonDnfCounter++;
-                    max = Math.max(max, result);
-                    min = Math.min(min, result);
                 }
             }
         }

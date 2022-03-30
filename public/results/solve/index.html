@@ -70,8 +70,9 @@
 
         const body = $('body');
 
-        body.append('<a href="../average?a=' + result.competitor + '"><button><h1>Show Average</h1></button></a>');
+        body.append('<a href="../average?a=' + result.competitor + '&e='+ result.event +'"><button><h1>Show Average</h1></button></a>');
         body.append('<p class="text"><a href="../name?n=' + people[result.competitor].displayName + '">' + people[result.competitor].displayName + '</a></p>');
+        body.append('<p class="text">Event: ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[result.event] + '</p>');
         body.append('<p class="text">' + result.scramble + '</p>');
         body.append('<p class="text">Result: ' + result.result + '</p>');
         body.append('<p class="text">Penalty: ' + result.penalty.toUpperCase() + '</p>');
