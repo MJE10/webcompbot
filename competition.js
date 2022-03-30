@@ -753,7 +753,7 @@ module.exports = class Competition {
             },
             serverData: {
                 url: process.env.URL,
-                port: 80,
+                port: process.env.PORT,
                 UIDs: {},
                 tokens: {},
                 relogTokens: {},
