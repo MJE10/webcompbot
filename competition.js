@@ -220,10 +220,15 @@ module.exports = class Competition {
                             }
                             eventButtons.push({ text: name, value: this.comp.settings.events[event] });
                         }
-                        this.comp.people[uid].action = {
-                            type: "buttons",
-                            message: "Please choose the event",
-                            buttons: eventButtons
+                        if (eventButtons.length === 1) {
+                            this.click(uid, {value: eventButtons[0].value});
+                            repeat = true;
+                        } else {
+                            this.comp.people[uid].action = {
+                                type: "buttons",
+                                message: "Please choose the event",
+                                buttons: eventButtons
+                            }
                         }
                     } else if (person.status === this.STATUS.SELF_SERVE.SCRAMBLING) {
                         const scramble = this.comp.solves[this.comp.people[uid].solve].scramble;
