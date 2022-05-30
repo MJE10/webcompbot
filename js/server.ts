@@ -271,7 +271,7 @@ export default class WebServer {
         }.bind(this));
     }
 
-    onNewUsers(users: any, callback:(user: any, link: any) => void) {
+    onNewUsers(users: any, callback: (user: any, link: any) => void) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
