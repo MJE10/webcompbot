@@ -280,7 +280,7 @@ class WebServer {
             this.cleanSocketList();
         }.bind(this));
     }
-    onNewUsers(users, callback = () => { }) {
+    onNewUsers(users, callback) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
@@ -292,7 +292,7 @@ class WebServer {
             // register the token
             this.data.tokens[user] = token.toString();
             this.onDataChanged(this.data);
-            if (callback == null) {
+            if (!callback) {
                 // send the user the new link via a new channel
                 this.onUserLinkGenerated(user, this.url + '?t=' + token);
             }

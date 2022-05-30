@@ -9,11 +9,11 @@ module.exports = class Scrambler {
             type = "three";
         console.log('scramble generated!');
         const tnoodlePath = process.env.tnoodlePath;
-        const imagesPath = process.env.imagesPath;
+        const imagesPath = "./public/images/";
         const scramble = execSync(tnoodlePath + " scramble -p " + type).toString().trim();
         console.log(scramble);
         // generate image
-        execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "' + scramble);
+        execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "' + scramble + '"');
         console.log('image generated!');
         return scramble;
     }

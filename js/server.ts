@@ -271,7 +271,7 @@ export default class WebServer {
         }.bind(this));
     }
 
-    onNewUsers(users: any, callback:(user: any, link: any) => void = () => {}) {
+    onNewUsers(users: any, callback: (user: any, link: any) => void) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
@@ -284,7 +284,7 @@ export default class WebServer {
             this.data.tokens[user] = token.toString();
             this.onDataChanged(this.data);
 
-            if (callback==null) {
+            if (!callback) {
                 // send the user the new link via a new channel
                 this.onUserLinkGenerated(user, this.url + '?t=' + token);
             } else {
