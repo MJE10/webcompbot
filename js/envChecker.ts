@@ -26,8 +26,7 @@ module.exports = class EnvChecker {
             "token",
             "URL",
             "PORT",
-            "tnoodlePath",
-            "imagesPath"
+            "tnoodlePath"
         ];
 
         for (const variable of requiredVariables) {
