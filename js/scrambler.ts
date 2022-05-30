@@ -9,7 +9,7 @@ module.exports = class Scrambler {
         if (type === "apple") type = "three";
         console.log('scramble generated!');
 
-        const tnoodlePath = process.env.tnoodlePath;
+        const tnoodlePath = process.env.TNOODLE_PATH;
         const imagesPath = "./public/images/";
 
         const scramble = execSync(tnoodlePath + " scramble -p "+type).toString().trim();

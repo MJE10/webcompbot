@@ -74,7 +74,7 @@ export default class DiscordClient {
             await reaction.message.react("👍");
         });
 
-        this.client.login(process.env.token).then();
+        this.client.login(process.env.TOKEN).then();
     }
 
     async onUserLinkGenerated(user: string, link: string) {

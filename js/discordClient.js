@@ -55,7 +55,7 @@ class DiscordClient {
             this.waitingUsers = [];
             yield reaction.message.react("👍");
         }));
-        this.client.login(process.env.token).then();
+        this.client.login(process.env.TOKEN).then();
     }
     onUserLinkGenerated(user, link) {
         return __awaiter(this, void 0, void 0, function* () {
