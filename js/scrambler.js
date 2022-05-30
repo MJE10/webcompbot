@@ -1,6 +1,7 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const { execSync } = require("child_process");
-module.exports = class Scrambler {
+class Scrambler {
     constructor() { }
     generateScramble(typeIn = "three") {
         // generate scramble
@@ -17,4 +18,5 @@ module.exports = class Scrambler {
         console.log('image generated!');
         return scramble;
     }
-};
+}
+exports.default = Scrambler;

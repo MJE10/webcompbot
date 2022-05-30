@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const discordClient_1 = __importDefault(require("./discordClient"));
 const server_1 = __importDefault(require("./server"));
-const generateScramble = require("scramble-generator").default;
-const scrambler = new (require("./scrambler"));
+const scrambler_1 = __importDefault(require("./scrambler"));
+const scrambler = new scrambler_1.default();
 class Competition {
     constructor() {
         this.discordClient = null;

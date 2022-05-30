@@ -1,6 +1,6 @@
 const { execSync } = require("child_process");
 
-module.exports = class Scrambler {
+export default class Scrambler {
     constructor() {}
 
     generateScramble(typeIn="three") {
