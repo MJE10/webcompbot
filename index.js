@@ -1,3 +1,7 @@
+// check that all environment variables are set
+const EnvChecker = require("./envChecker");
+new EnvChecker();
+
 const Competition = require("./competition");
 
 const competition = new Competition();
