@@ -23,7 +23,7 @@ module.exports = class EnvChecker {
             "TOKEN",
             "URL",
             "PORT",
-            "TNOODLE_PATH",
+            "TNOODLE_PATH"
         ];
         for (const variable of requiredVariables) {
             if (!process.env[variable]) {

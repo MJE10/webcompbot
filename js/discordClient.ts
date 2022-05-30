@@ -1,8 +1,6 @@
 // noinspection JSCheckFunctionSignatures
 import {Client, TextChannel} from "discord.js";
 
-const fs = require('fs');
-
 const discord_js = require('discord.js');
 const { Intents } = discord_js;
 

@@ -1,8 +1,9 @@
 import fs from 'fs';
 import DiscordClient from "./discordClient";
 import WebServer from "./server";
-const generateScramble = require("scramble-generator").default;
-const scrambler = new (require("./scrambler"));
+import Scrambler from "./scrambler";
+
+const scrambler = new Scrambler();
 
 export default class Competition {
 
