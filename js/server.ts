@@ -1,8 +1,54 @@
+import Competition from "./competition";
+import DiscordClient from "./discordClient";
+
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+// import {DiscordClient} from "./discordClient";
 
-module.exports = class WebServer {
-    constructor(competition, discordClient, dataInput) {
+// interface CompetitionType {
+//     comp: any;
+//
+//     getAllResults(): any
+//     getSolveResults(id: string): any
+//     getAverageResults(id: string): any
+//     getUserResults(id: string): any
+//     getPersonAverage(uid: string, event: string): any
+//     click(uid: string, click: string): any
+//     save(): void
+//     setName(name: string): void
+//     setSolvesPerAverage(number: number): any
+//     editSetting(setting: string, option: string): any
+//     getSavedCompNames(): any
+//     newComp(name: string): any
+//     loadById(id: string): any
+//     changeSolveResult(id: string, result: string): any
+//     changeSolvePenalty(id: string, penalty: string): any
+//     choosePersonType(id: string, type: string): any
+//     choosePersonCup(id: string, cup: string): any
+//     regenerateActions(): void
+//     personChangeDisplayName(id: string, name: string): any
+//     personDie(id: string): void
+//     newCup(name: string): any
+//     getGameUpdate(): any
+//     getActionForUID(id: string): any
+//
+// }
+
+// interface DiscordClient {
+//     client: any;
+//     constants: any;
+//
+//     isAdmin(id: string): boolean
+// }
+
+export default class WebServer {
+    data: any;
+    sockets: any;
+    url: string;
+    competition: Competition;
+    discordClient: DiscordClient;
+
+    constructor(competition: Competition, discordClient: DiscordClient, dataInput: any) {
 
         this.data = dataInput;
         this.sockets = {'control':[],'action':[]};
@@ -17,33 +63,33 @@ module.exports = class WebServer {
 
         app.use(express.static('public'));
 
-        app.get('/joinGame', (req, res) => {
+        app.get('/joinGame', (req: any, res: any) => {
             let param = req.url.split('?name=');
             if (param.length === 2) {
                 // create a new link for this person and send it back
-                this.onNewUsers([decodeURIComponent(param[1])], (user, link) => {
+                this.onNewUsers([decodeURIComponent(param[1])], (user: any, link: any) => {
                     res.send({link:link});
                 })
             } else res.send('ok');
         });
 
-        app.get('/allResults', (req, res) => {
+        app.get('/allResults', (req: any, res: any) => {
             res.send(JSON.stringify(this.competition.getAllResults()));
         });
 
-        app.get('/solveResults', (req, res) => {
+        app.get('/solveResults', (req: any, res: any) => {
             res.send(JSON.stringify(this.competition.getSolveResults(req.url.split('?s=')[1])));
         });
 
-        app.get('/avgResults', (req, res) => {
+        app.get('/avgResults', (req: any, res: any) => {
             res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1].split('&e=')[0],req.url.split('?p=')[1].split('&e=')[1])));
         });
 
-        app.get('/userResults', (req, res) => {
+        app.get('/userResults', (req: any, res: any) => {
             res.send(JSON.stringify(this.competition.getUserResults(decodeURIComponent(req.url.split('?p=')[1]))));
         });
 
-        app.get('/people', (req, res) => {
+        app.get('/people', (req: any, res: any) => {
             res.send(JSON.stringify(this.competition.comp.people));
         });
 
@@ -53,9 +99,9 @@ module.exports = class WebServer {
 
         const wss = new Server({server: server});
 
-        wss.on('connection', function connection(ws) {
+        wss.on('connection', function connection(this: WebServer, ws: any) {
             // console.log('Connected!');
-            ws.on('message', async function incoming(message) {
+            ws.on('message', async function incoming(this: WebServer, message: any) {
                 try {
                     const data = JSON.parse(message);
                     // console.log(data);
@@ -218,14 +264,14 @@ module.exports = class WebServer {
                     throw e;
                 }
             }.bind(this));
-            ws.on('close', function onclose() {
+            ws.on('close', function onclose(this: WebServer) {
                 this.cleanSocketList();
             }.bind(this));
             this.cleanSocketList();
         }.bind(this));
     }
 
-    onNewUsers(users, callback=null) {
+    onNewUsers(users: any, callback:(user: any, link: any) => void = () => {}) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
@@ -261,7 +307,7 @@ module.exports = class WebServer {
         }
     }
 
-    async resetWith(data) {
+    async resetWith(data: any) {
         this.data = data;
         for (const controlSocketIndex in this.sockets['control']) {
             // let uid = uuidv4();
@@ -296,8 +342,8 @@ module.exports = class WebServer {
         this.onDataChanged(this.data);
     }
 
-    onUserLinkGenerated = () => {};
-    onUserClickedLink = () => {};
-    onDataChanged = () => {};
-    onUidGenerated = () => {};
+    onUserLinkGenerated = (user: string, link: string): void => {};
+    onUserClickedLink = (user: string): void => {};
+    onDataChanged = (data: any): void => {};
+    onUidGenerated = (uid: string, user: string, displayName: string, tag: string): void => {};
 }

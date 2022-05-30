@@ -1,10 +1,14 @@
-const fs = require('fs');
-const DiscordClient = require("./discordClient");
-const WebServer = require("./server");
+import fs from 'fs';
+import DiscordClient from "./discordClient";
+import WebServer from "./server";
 const generateScramble = require("scramble-generator").default;
 const scrambler = new (require("./scrambler"));
 
-module.exports = class Competition {
+export default class Competition {
+
+    comp: any;
+    discordClient: DiscordClient | null = null;
+    webServer: any;
 
     STATUS = {
         ROLE_SELECT: "roleSelect",
@@ -53,15 +57,14 @@ module.exports = class Competition {
         }
     }
 
-    makeDiscordClient() {
+    makeDiscordClient(): DiscordClient {
         this.discordClient = new DiscordClient(this.comp.discordData);
         this.discordClient.onDataChanged = this.saveDiscordData.bind(this);
         return this.discordClient;
     }
 
-    makeWebServer(discordClient) {
-        if (discordClient !== undefined) this.webServer = new WebServer(this, discordClient, this.comp.serverData);
-        else this.webServer = new WebServer(this, this.discordClient, this.comp.serverData);
+    makeWebServer(discordClient: DiscordClient) {
+        this.webServer = new WebServer(this, discordClient, this.comp.serverData);
         this.webServer.onDataChanged = this.saveServerData.bind(this);
         this.webServer.onUidGenerated = this.onUidGenerated.bind(this);
         return this.webServer;
@@ -80,17 +83,17 @@ module.exports = class Competition {
         fs.writeFileSync("competitions/default.json", JSON.stringify(this.comp));
     }
 
-    saveServerData(serverData) {
+    saveServerData(serverData: any) {
         this.comp.serverData = serverData;
         this.save();
     }
 
-    saveDiscordData(discordData) {
+    saveDiscordData(discordData: any) {
         this.comp.discordData = discordData;
         this.save();
     }
 
-    loadById(id) {
+    loadById(id: any) {
         const path = "competitions/comp" + id + ".json"
         if (!fs.existsSync(path)) return false;
         this.comp = JSON.parse(fs.readFileSync(path).toString());
@@ -98,7 +101,7 @@ module.exports = class Competition {
         return true;
     }
 
-    loadByName(name) {
+    loadByName(name: any) {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
         let matches = [];
         for (const index in directory) if (directory[index] === name) matches.push(index);
@@ -108,7 +111,7 @@ module.exports = class Competition {
         return this.loadById(matches[0]);
     }
 
-    setName(x) {
+    setName(x: any) {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
         for (const index in directory) if (directory[index] === x) return false;
         directory[this.comp.competitionId] = x;
@@ -118,12 +121,12 @@ module.exports = class Competition {
         return true;
     }
 
-    setSolvesPerAverage(x) {
+    setSolvesPerAverage(x: any) {
         if (x > 0) this.comp.solvesPerAverage = x;
         this.save();
     }
 
-    onUidGenerated(uid, user, displayName, username) {
+    onUidGenerated(uid: any, user: any, displayName: any, username: any) {
         this.comp.people[uid] = {
             id: uid,
             discordUser: user,
@@ -141,7 +144,7 @@ module.exports = class Competition {
 
     regenerateActions() {
 
-        let possibleVolunteerSolves = {
+        let possibleVolunteerSolves: { [key: string]: string[] } = {
             'scramble': [],
             'run': [],
             'judge': [],
@@ -537,7 +540,7 @@ module.exports = class Competition {
         this.save();
     }
 
-    click(uid, value) {
+    click(uid: any, value: any) {
         let person = this.comp.people[uid];
         if (person.type === undefined) {
             if (person.status === this.STATUS.ROLE_SELECT) {
@@ -631,7 +634,7 @@ module.exports = class Competition {
                     this.comp.people[uid].status = this.STATUS.DEAD;
                 } else if (value.value === "continue") {
                     const oldFunction = this.webServer.onUserLinkGenerated;
-                    this.webServer.onUserLinkGenerated = (user, url) => {
+                    this.webServer.onUserLinkGenerated = (user: any, url: any) => {
                         this.comp.people[uid].status = this.STATUS.COMPETE.CONTINUE;
                         this.comp.people[uid].continueLink = url;
                     };
@@ -725,7 +728,7 @@ module.exports = class Competition {
         this.save();
     }
 
-    getActionForUID(uid) {
+    getActionForUID(uid: any) {
         return this.comp.people[uid].action;
     }
 
@@ -733,7 +736,7 @@ module.exports = class Competition {
         return this.comp;
     }
 
-    newComp(name) {
+    newComp(name: any) {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
         let highestNumber = -1;
         for (const index in directory) if (parseInt(index) > highestNumber) highestNumber = parseInt(index);
@@ -776,20 +779,20 @@ module.exports = class Competition {
         return JSON.parse(fs.readFileSync("competitions/directory.json").toString());
     }
 
-    editSetting(setting, value) {
+    editSetting(setting: any, value: any) {
         this.comp.settings[setting] = value;
         this.regenerateActions();
         this.save();
     }
 
-    choosePersonType(uid, type) {
+    choosePersonType(uid: any, type: any) {
         const person = this.comp.people[uid];
         if (person.type === 'organizer_chosen' || (person.type === undefined && this.comp.settings.roleSelect.includes('organizer_chosen'))) {
             this.choosePersonTypeHelper(uid, type);
         }
     }
 
-    choosePersonTypeHelper(uid, type) {
+    choosePersonTypeHelper(uid: any, type: any) {
         this.comp.people[uid].type = type;
         const person = this.comp.people[uid];
         if (person.type === 'compete') {
@@ -803,11 +806,11 @@ module.exports = class Competition {
         this.save();
     }
 
-    choosePersonCup(uid, cup) {
+    choosePersonCup(uid: any, cup: any) {
         if (this.comp.people[uid].type === 'compete') this.choosePersonCupHelper(uid, cup, "three");
     }
 
-    choosePersonCupHelper(uid, cup, event) {
+    choosePersonCupHelper(uid: any, cup: any, event: any) {
         let maxSolveId = 0;
         for (const solveIndex in this.comp.solves) if (parseInt(this.comp.solves[solveIndex].id) > maxSolveId)
             maxSolveId = parseInt(this.comp.solves[solveIndex].id);
@@ -826,13 +829,13 @@ module.exports = class Competition {
         this.regenerateActions();
     }
 
-    personChangeDisplayName(uid, name) {
+    personChangeDisplayName(uid: any, name: any) {
         this.comp.people[uid].displayName = name;
         this.regenerateActions();
         this.save();
     }
 
-    personDie(uid) {
+    personDie(uid: any) {
         // something went wrong and this person needed to be manually terminated
         console.log(uid);
         const person = this.comp.people[uid];
@@ -882,7 +885,7 @@ module.exports = class Competition {
         this.save();
     }
 
-    newCup(name) {
+    newCup(name: any) {
         let maxCupId = 0;
         for (const cupId in this.comp.cups) if (parseInt(cupId) > maxCupId) maxCupId = parseInt(cupId);
         this.comp.cups[maxCupId + 1] = {
@@ -894,22 +897,22 @@ module.exports = class Competition {
     }
 
     getAllResults() {
-        let results = {};
+        let results: {[key: string]: string} = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status === this.STATUS.SOLVE.COMPLETE) {
             results[solveId] = this.comp.solves[solveId];
         }
         return results;
     }
 
-    getSolveResults(id) {
+    getSolveResults(id: any) {
         try {
             if (this.comp.solves[parseInt(id)] && this.comp.solves[id].status === this.STATUS.SOLVE.COMPLETE) return this.comp.solves[id];
             else return {};
         } catch (e) { return {}; }
     }
 
-    getAverageResults(id) {
-        let average = {};
+    getAverageResults(id: any) {
+        let average: { [key:string]: string } = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status === this.STATUS.SOLVE.COMPLETE) {
             if (this.comp.solves[solveId].competitor === id) {
                 average[solveId] = this.comp.solves[solveId];
@@ -918,8 +921,8 @@ module.exports = class Competition {
         return average;
     }
 
-    getUserResults(id) {
-        let solves = {};
+    getUserResults(id: any) {
+        let solves: { [key:string]: string } = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status === this.STATUS.SOLVE.COMPLETE) {
             if (this.comp.people[this.comp.solves[solveId].competitor].discordUser === id) {
                 solves[solveId] = this.comp.solves[solveId];
@@ -928,15 +931,23 @@ module.exports = class Competition {
         return solves;
     }
 
-    getPersonAverage(uid, event) {
+    getPersonAverage(uid: any, event: any) {
         let sum = 0;
         let max = 0;
         let min = 999999999999999999999999;
         let counter = 1;
         let nonDnfCounter = 0;
         let dnfCount = 0;
-        let retAverage = {};
-        let solves = {};
+        let retAverage: {
+            mean: any,
+            average: any,
+            solves: any,
+        } = {
+            mean: 0,
+            average: 0,
+            solves: 0,
+        };
+        let solves: { [key:string]: any } = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) {
             if (this.comp.solves[solveId].event === event) {
                 if (this.comp.solves[solveId].result !== undefined) {
@@ -994,7 +1005,7 @@ module.exports = class Competition {
         return retAverage;
     }
 
-    changeSolveResult(id, result) {
+    changeSolveResult(id: any, result: any) {
         try {
             console.log('a');
             this.comp.solves[id].result = parseFloat(result);
@@ -1003,7 +1014,7 @@ module.exports = class Competition {
         }
     }
 
-    changeSolvePenalty(id, penalty) {
+    changeSolvePenalty(id: any, penalty: any) {
         if (penalty === 'none' || penalty === '+2' || penalty === 'dnf') this.comp.solves[id].penalty = penalty;
     }
 }

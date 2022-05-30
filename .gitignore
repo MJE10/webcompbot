@@ -4,4 +4,4 @@
 /competitions/
 /public/images/
 .env
-competitions/directory.json
+/competitions/directory.json

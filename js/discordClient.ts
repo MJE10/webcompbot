@@ -1,14 +1,38 @@
 // noinspection JSCheckFunctionSignatures
+import {Client, TextChannel} from "discord.js";
+
 const fs = require('fs');
 
 const discord_js = require('discord.js');
-const { Client, Intents } = discord_js;
+const { Intents } = discord_js;
 
 require('dotenv').config();
 
-module.exports = class DiscordClient {
+interface Data {
+    userLinkChannels: { [key: string]: string }
+}
 
-    constructor(dataInput) {
+export default class DiscordClient {
+    private readonly data: Data;
+
+    client: Client;
+    constants: {
+        GUILD_ID: string,
+        CHANNEL_HOME: string,
+        CATEGORY_COMPETITIONS: string,
+        CHANNEL_RESULTS: string,
+        RESULTS_MESSAGE: string,
+        ROLE_MODERATOR: string,
+        MESSAGE_HOME: string,
+        CLIENT_SNOWFLAKE: string,
+        MJE10_SNOWFLAKE: string
+    }
+    private waitingUsers: any[];
+
+    public onUsersReact = (users: any[]): void => {};
+    public onDataChanged = (data: any): void => {};
+
+    constructor(dataInput: Data) {
 
         this.data = dataInput;
 
@@ -16,7 +40,10 @@ module.exports = class DiscordClient {
 
         this.client.once('ready', async () => {
             console.log('Ready!');
-            await (await this.client.channels.fetch(this.constants.CHANNEL_HOME)).messages.fetch(this.constants.MESSAGE_HOME);
+            const channel = await this.client.channels.fetch(this.constants.CHANNEL_HOME);
+            if (channel) {
+                await (channel as TextChannel).messages.fetch(this.constants.MESSAGE_HOME);
+            }
         });
 
         this.constants = {
@@ -50,13 +77,13 @@ module.exports = class DiscordClient {
         this.client.login(process.env.token).then();
     }
 
-    async onUserLinkGenerated(user, link) {
+    async onUserLinkGenerated(user: string, link: string) {
         let discordUser = await this.client.users.fetch(user);
 
         if (user in this.data.userLinkChannels) {
             const guild = await this.client.guilds.fetch(this.constants.GUILD_ID);
             const channel = await guild.channels.fetch(this.data.userLinkChannels[user]);
-            await channel.delete();
+            await (channel as TextChannel).delete();
             delete this.data.userLinkChannels[user];
         }
 
@@ -70,20 +97,17 @@ module.exports = class DiscordClient {
         await new_channel.send('<@' + user + '> Click this link to go to your page: ' + link);
     }
 
-    async onUserClickedLink(user) {
+    async onUserClickedLink(user: string) {
         if (user in this.data.userLinkChannels) {
             const guild = await this.client.guilds.fetch(this.constants.GUILD_ID);
             const channel = await guild.channels.fetch(this.data.userLinkChannels[user]);
-            await channel.delete();
+            await (channel as TextChannel).delete();
             delete this.data.userLinkChannels[user];
             this.onDataChanged(this.data);
         }
     }
 
-    isAdmin(id) {
+    isAdmin(id: string): boolean {
         return id === this.constants.MJE10_SNOWFLAKE;
     }
-
-    onUsersReact = () => {};
-    onDataChanged = () => {};
 }
