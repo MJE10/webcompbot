@@ -1,8 +1,6 @@
 // noinspection JSCheckFunctionSignatures
 import {Client, TextChannel} from "discord.js";
 
-const fs = require('fs');
-
 const discord_js = require('discord.js');
 const { Intents } = discord_js;
 
@@ -74,7 +72,7 @@ export default class DiscordClient {
             await reaction.message.react("👍");
         });
 
-        this.client.login(process.env.token).then();
+        this.client.login(process.env.TOKEN).then();
     }
 
     async onUserLinkGenerated(user: string, link: string) {

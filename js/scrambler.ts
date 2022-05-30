@@ -9,7 +9,7 @@ export default class Scrambler {
         if (type === "apple") type = "three";
         console.log('scramble generated!');
 
-        const tnoodlePath = process.env.tnoodlePath;
+        const tnoodlePath = process.env.TNOODLE_PATH;
         const imagesPath = "./public/images/";
 
         const scramble = execSync(tnoodlePath + " scramble -p "+type).toString().trim();
@@ -17,7 +17,7 @@ export default class Scrambler {
 
         // generate image
 
-        execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "'+ scramble);
+        execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "'+ scramble + '"');
         console.log('image generated!');
 
         return scramble;

@@ -23,10 +23,10 @@ module.exports = class EnvChecker {
 
         // check that all required variables are set
         const requiredVariables = [
-            "token",
+            "TOKEN",
             "URL",
             "PORT",
-            "tnoodlePath"
+            "TNOODLE_PATH"
         ];
 
         for (const variable of requiredVariables) {

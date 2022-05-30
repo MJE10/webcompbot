@@ -11,7 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 // noinspection JSCheckFunctionSignatures
 const discord_js_1 = require("discord.js");
-const fs = require('fs');
 const discord_js = require('discord.js');
 const { Intents } = discord_js;
 require('dotenv').config();
@@ -55,7 +54,7 @@ class DiscordClient {
             this.waitingUsers = [];
             yield reaction.message.react("👍");
         }));
-        this.client.login(process.env.token).then();
+        this.client.login(process.env.TOKEN).then();
     }
     onUserLinkGenerated(user, link) {
         return __awaiter(this, void 0, void 0, function* () {
