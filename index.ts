@@ -1,11 +1,10 @@
 "use strict";
 
 // check that all environment variables are set
-const EnvChecker = require("./js/envChecker");
-new EnvChecker();
+import checkEnv from "./js/envChecker";
+checkEnv();
 
 import Competition from "./js/competition";
-import DiscordClient from "./js/discordClient";
 
 const competition = new Competition();
 const discordClient = competition.makeDiscordClient();
