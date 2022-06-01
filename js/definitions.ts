@@ -1,0 +1,1 @@
+export type event = "three" | "four" | "apple"
