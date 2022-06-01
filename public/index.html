@@ -8,7 +8,7 @@
     <script src="jquery-1.9.1.min.js"></script>
 <!--    <script src="cstimer/kernel.js"></script>-->
 <!--    <script src="cstimer/myimage.js"></script>-->
-    <!--    <link rel="stylesheet" href="style.css">-->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -17,64 +17,6 @@
 <div class="temp"></div>
 
 </body>
-<style>
-
-    * {
-        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
-    }
-
-    body {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-
-        background-color: #1368ce;
-
-        text-align: center;
-        color: white;
-    }
-
-    #message {
-        padding: 1em 1em 0 1em;
-        margin: 0;
-        white-space: pre-line;
-    }
-
-    button {
-        display: inline-block;
-        margin: 5px;
-    }
-
-    button h1 {
-        margin: 10px;
-        font-size: large;
-    }
-
-    .images {
-        flex-shrink: 1;
-        margin: 5px;
-    }
-
-    img {
-        display: inline-block;
-        width: min(40vw, min(60vh, 300px));
-    }
-
-    input {
-        font-size: large;
-    }
-
-    iframe {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-        align-self: flex-start;
-    }
-
-</style>
 <script>
 
     let socket = null;
@@ -200,8 +142,8 @@
             $("#message").text("Welcome!");
             const body = $("body");
             $(".temp").remove();
-            body.append('<a href="results"><button class="temp"><h1>Results</h1></button></a>');
-            body.append('<a href="join"><button class="temp"><h1>Join</h1></button></a>');
+            body.append('<a href="results"><button class="temp"><h1>RESULTS</h1></button></a>');
+            body.append('<a href="join"><button class="temp"><h1>JOIN</h1></button></a>');
             body.append('<div class="temp"></div>');
         }
         else assignFunctions(socket);

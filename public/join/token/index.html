@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>CompBot Web</title>
     <script src="../../jquery-1.9.1.min.js"></script>
-    <!--    <link rel="stylesheet" href="style.css">-->
+    <link rel="stylesheet" href="../../style.css">
 </head>
 <body>
 
@@ -16,65 +16,13 @@
         <input id="username" type="text" placeholder="123456" autofocus><br><br>
     </label>
 
-    <a onclick="joinComp()"><button><h1>Join</h1></button></a>
+    <a onclick="joinComp()"><button><h1>Join With Token</h1></button></a>
 </form>
-<a href="token"><button><h1>Join with Token</h1></button></a>
 <a href="../../"><button><h1>Home</h1></button></a>
 
 <div class="temp"></div>
 
 </body>
-<style>
-
-    * {
-        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
-    }
-
-    body {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-
-        background-color: #1368ce;
-
-        text-align: center;
-        color: white;
-    }
-
-    #message {
-        padding: 1em 1em 0 1em;
-        margin: 0;
-        white-space: pre-line;
-    }
-
-    button {
-        display: inline-block;
-        margin: 5px;
-    }
-
-    button h1 {
-        margin: 10px;
-        font-size: large;
-    }
-
-    .images {
-        flex-shrink: 1;
-        margin: 5px;
-    }
-
-    img {
-        display: inline-block;
-        width: min(40vw, min(60vh, 300px));
-    }
-
-    input {
-        font-size: large;
-    }
-
-</style>
 
 <script>
     async function joinComp() {

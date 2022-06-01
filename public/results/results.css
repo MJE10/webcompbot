@@ -1,0 +1,11 @@
+body {
+    justify-content: normal;
+}
+
+.text, button {
+    margin: 10px;
+}
+
+a {
+    color: white;
+}

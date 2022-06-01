@@ -6,56 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>CompBot Web</title>
     <script src="../jquery-1.9.1.min.js"></script>
-    <!--    <link rel="stylesheet" href="style.css">-->
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="results.css">
 </head>
 <body>
 
 
 
 </body>
-<style>
-
-    * {
-        font-family: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
-    }
-
-    body {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin: 0;
-
-        background-color: #1368ce;
-
-        text-align: center;
-        color: white;
-    }
-
-    .text {
-        padding: 1em 1em 0 1em;
-        margin: 0;
-        white-space: pre-line;
-    }
-
-    button {
-        display: inline-block;
-        margin: 5px;
-    }
-
-    button h1 {
-        margin: 10px;
-        font-size: large;
-    }
-
-    .text, button {
-        margin: 10px;
-    }
-
-    a {
-        color: white;
-    }
-
-</style>
 <script>
 
     function main() {
@@ -81,7 +39,7 @@
         $(".text").remove();
         $("button").remove();
         body.append('<h1 class="text">Leaderboard: ' +{"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[event]+ '</h1>\n' +
-            '<a href="../"><button><h1>Home</h1></button></a>');
+            '<a class="text" href="../"><button><h1>Home</h1></button></a>');
         body.append('<div class="text">Pos #) Name (<a href="../results">Avg</a>/<a href="../results?s=1">Single</a>)</div>')
         for (const singleId in singles) body.append(singles[singleId]);
 
