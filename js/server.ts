@@ -1,111 +1,93 @@
 import Competition from "./competition";
 import DiscordClient from "./discordClient";
 
-const express = require('express');
-const { v4: uuidv4 } = require('uuid');
-// import {DiscordClient} from "./discordClient";
+import express = require('express');
+import { v4 as uuid_v4 } from 'uuid';
 
-// interface CompetitionType {
-//     comp: any;
-//
-//     getAllResults(): any
-//     getSolveResults(id: string): any
-//     getAverageResults(id: string): any
-//     getUserResults(id: string): any
-//     getPersonAverage(uid: string, event: string): any
-//     click(uid: string, click: string): any
-//     save(): void
-//     setName(name: string): void
-//     setSolvesPerAverage(number: number): any
-//     editSetting(setting: string, option: string): any
-//     getSavedCompNames(): any
-//     newComp(name: string): any
-//     loadById(id: string): any
-//     changeSolveResult(id: string, result: string): any
-//     changeSolvePenalty(id: string, penalty: string): any
-//     choosePersonType(id: string, type: string): any
-//     choosePersonCup(id: string, cup: string): any
-//     regenerateActions(): void
-//     personChangeDisplayName(id: string, name: string): any
-//     personDie(id: string): void
-//     newCup(name: string): any
-//     getGameUpdate(): any
-//     getActionForUID(id: string): any
-//
-// }
+import { Server as WssServer, WebSocket } from 'ws';
+import {CompBotWebSocketMessage, CompBotUuid, CompBotUser, CompBotToken} from "./definitions";
 
-// interface DiscordClient {
-//     client: any;
-//     constants: any;
-//
-//     isAdmin(id: string): boolean
-// }
+interface WebServerData {
+    url: string
+    port: string
+    tokens: { [key: CompBotUser]: CompBotToken }
+    relogTokens: { [key: CompBotUser]: CompBotToken }
+    UIDs: { [key: CompBotUuid]: CompBotUser }
+    socketCount: {
+        "control": number
+        "other": { [key: CompBotUuid]: number }
+    }
+}
 
 export default class WebServer {
-    data: any;
-    sockets: any;
-    url: string;
+
+    data: WebServerData;
+
+    sockets: {
+        'control': Array<WebSocket>,
+        'action': Array<{socket: WebSocket, uid: CompBotUuid}>
+        'other': {[key: CompBotUuid]: WebSocket}
+    } = {'control': [],'action': [], other: {}};
+
     competition: Competition;
     discordClient: DiscordClient;
 
-    constructor(competition: Competition, discordClient: DiscordClient, dataInput: any) {
+    onUserLinkGenerated: (user: CompBotUser, link: string) => void = () => {};
+    onUserClickedLink: (user: CompBotUser) => void = () => {};
+    onDataChanged: (data: WebServerData) => void = () => {};
+    onUidGenerated: (uid: CompBotUuid, user: CompBotUser, displayName: string, tag: string) => void = () => {};
+
+    constructor(competition: Competition, discordClient: DiscordClient, dataInput: WebServerData) {
 
         this.data = dataInput;
-        this.sockets = {'control':[],'action':[]};
 
         // ---------------------------- Web Services -------------------------------
 
         const app = express()
-        const port = this.data.port;
-        this.url = this.data.url;
         this.competition = competition;
         this.discordClient = discordClient;
 
         app.use(express.static('public'));
 
-        app.get('/joinGame', (req: any, res: any) => {
+        app.get('/joinGame', (req: express.Request, res: express.Response) => {
             let param = req.url.split('?name=');
             if (param.length === 2) {
                 // create a new link for this person and send it back
-                this.onNewUsers([decodeURIComponent(param[1])], (user: any, link: any) => {
+                this.onNewUsers([decodeURIComponent(param[1])], (user: CompBotUser, link: string) => {
                     res.send({link:link});
                 })
             } else res.send('ok');
         });
 
-        app.get('/allResults', (req: any, res: any) => {
+        app.get('/allResults', (req: express.Request, res: express.Response) => {
             res.send(JSON.stringify(this.competition.getAllResults()));
         });
 
-        app.get('/solveResults', (req: any, res: any) => {
+        app.get('/solveResults', (req: express.Request, res: express.Response) => {
             res.send(JSON.stringify(this.competition.getSolveResults(req.url.split('?s=')[1])));
         });
 
-        app.get('/avgResults', (req: any, res: any) => {
+        app.get('/avgResults', (req: express.Request, res: express.Response) => {
             res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1].split('&e=')[0],req.url.split('?p=')[1].split('&e=')[1])));
         });
 
-        app.get('/userResults', (req: any, res: any) => {
+        app.get('/userResults', (req: express.Request, res: express.Response) => {
             res.send(JSON.stringify(this.competition.getUserResults(decodeURIComponent(req.url.split('?p=')[1]))));
         });
 
-        app.get('/people', (req: any, res: any) => {
+        app.get('/people', (req: express.Request, res: express.Response) => {
             res.send(JSON.stringify(this.competition.comp.people));
         });
 
-        const server = app.listen(port, () => { console.log(`Example app listening at ${this.url}, port ${port}`) });
+        const server = app.listen(this.data.port, () => { console.log(`Example app listening at ${this.data.url}, port ${this.data.port}`) });
 
-        const Server = require('ws').Server;
+        const wss = new WssServer({server: server});
 
-        const wss = new Server({server: server});
-
-        wss.on('connection', function connection(this: WebServer, ws: any) {
+        wss.on('connection', function connection(this: WebServer, ws: WebSocket) {
             // console.log('Connected!');
-            ws.on('message', async function incoming(this: WebServer, message: any) {
+            ws.on('message', async function incoming(this: WebServer, message: string) {
                 try {
-                    const data = JSON.parse(message);
-                    // console.log(data);
-                    // console.log(this.data.UIDs);
+                    const data: CompBotWebSocketMessage = JSON.parse(message);
 
                     // ------------------------------ Socket Logic -------------------------------
 
@@ -119,10 +101,10 @@ export default class WebServer {
 
                                 // the socket doesn't have its uid yet, we should generate one for it
                                 // make sure the uid is unique
-                                let uid = uuidv4();
-                                while (uid in this.data.UIDs) uid = uuidv4();
+                                let uid = uuid_v4();
+                                while (uid in this.data.UIDs) uid = uuid_v4();
                                 this.data.UIDs[uid] = user;
-                                this.sockets[uid] = ws;
+                                this.sockets['other'][uid] = ws;
                                 // register with competition
                                 const guild = await this.discordClient.client.guilds.fetch(this.discordClient.constants.GUILD_ID);
                                 try {
@@ -139,7 +121,7 @@ export default class WebServer {
                                 delete this.data.relogTokens[user];
                                 this.onUserClickedLink(user);
 
-                                this.sockets[user] = ws;
+                                this.sockets['other'][user] = ws;
                                 // send to socket
                                 ws.send(JSON.stringify({uid: user, message: "Login successful!"}));
                             }
@@ -250,7 +232,7 @@ export default class WebServer {
                                 let token = Math.floor(Math.random()*899999 + 100000);
                                 while (token in this.data.tokens || token in this.data.relogTokens) token = Math.floor(Math.random()*899999 + 100000);
 
-                                this.data.relogTokens[data.user] = token.toString();
+                                if (data.user) this.data.relogTokens[data.user] = token.toString();
                                 this.onDataChanged(this.data);
 
                                 ws.send(JSON.stringify({eType: 'alert', message: token.toString()}));
@@ -271,7 +253,7 @@ export default class WebServer {
         }.bind(this));
     }
 
-    onNewUsers(users: any, callback: (user: any, link: any) => void) {
+    onNewUsers(users: CompBotUser[], callback: (user: CompBotUser, link: string) => void) {
         // the function is given a list of Discord snowflakes that want to generate a new page
         // for each of them
         for (const userIndex in users) {
@@ -286,9 +268,9 @@ export default class WebServer {
 
             if (!callback) {
                 // send the user the new link via a new channel
-                this.onUserLinkGenerated(user, this.url + '?t=' + token);
+                this.onUserLinkGenerated(user, this.data.url + '?t=' + token);
             } else {
-                callback(user, this.url + '?t=' + token);
+                callback(user, this.data.url + '?t=' + token);
             }
         }
     }
@@ -307,27 +289,19 @@ export default class WebServer {
         }
     }
 
-    async resetWith(data: any) {
+    async resetWith(data: WebServerData) {
         this.data = data;
         for (const controlSocketIndex in this.sockets['control']) {
-            // let uid = uuidv4();
-            // while (uid in this.data.UIDs) uid = uuidv4();
-            // this.data.UIDs[uid] = this.discordClient.constants.MJE10_SNOWFLAKE;
-            // const guild = await this.discordClient.client.guilds.fetch(this.discordClient.constants.GUILD_ID);
-            // const discordUser = await guild.members.fetch(this.discordClient.constants.MJE10_SNOWFLAKE);
-            // this.onUidGenerated(uid, this.discordClient.constants.MJE10_SNOWFLAKE, discordUser.displayName, discordUser.user.tag);
-            // this.sockets['control'][controlSocketIndex].send(JSON.stringify({eType:'new link',link:this.url + "?uid=" + uid}));
             this.sockets['control'][controlSocketIndex].close();
-            // this.onDataChanged(this.data);
         }
         for (const socketIndex in this.sockets['action']) {
             this.sockets['action'][socketIndex]['socket'].close();
         }
-        this.sockets = {'control':[],'action':[]};
+        this.sockets = {'control': [],'action': [], 'other': {}};
     }
 
     cleanSocketList() {
-        this.data.socketCount = {'control':0};
+        this.data.socketCount = {'control':0, 'other': {}};
         for (const controlSocketIndex in this.sockets['control']) {
             if (this.sockets['control'][controlSocketIndex].readyState === 3) delete this.sockets['control'][controlSocketIndex];
             else this.data.socketCount['control']++;
@@ -335,15 +309,10 @@ export default class WebServer {
         for (const socketIndex in this.sockets['action']) {
             if (this.sockets['action'][socketIndex]['socket'].readyState === 3) delete this.sockets['action'][socketIndex];
             else {
-                if (!(this.sockets['action'][socketIndex]['uid'] in this.data.socketCount)) this.data.socketCount[this.sockets['action'][socketIndex]['uid']] = 1;
-                else this.data.socketCount[this.sockets['action'][socketIndex]['uid']]++;
+                if (!(this.sockets['action'][socketIndex]['uid'] in this.data.socketCount)) this.data.socketCount['other'][this.sockets['action'][socketIndex]['uid']] = 1;
+                else this.data.socketCount['other'][this.sockets['action'][socketIndex]['uid']]++;
             }
         }
         this.onDataChanged(this.data);
     }
-
-    onUserLinkGenerated = (user: string, link: string): void => {};
-    onUserClickedLink = (user: string): void => {};
-    onDataChanged = (data: any): void => {};
-    onUidGenerated = (uid: string, user: string, displayName: string, tag: string): void => {};
 }
