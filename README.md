@@ -9,7 +9,7 @@
 
 A web server with a public URL
 
-NodeJs 18.x
+NodeJs (https://nodejs.org/en/download/)
 
 Tnoodle CLI (https://github.com/SpeedcuberOSS/tnoodle-cli)
 
