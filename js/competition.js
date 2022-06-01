@@ -325,7 +325,7 @@ class Competition {
                             };
                         }
                         else {
-                            if (this.comp.settings.autoCupSelect === 'true') {
+                            if (this.comp.settings.autoCupSelect) {
                                 // try to find an empty cup
                                 for (const cupIndex in this.comp["cups"]) {
                                     let cup = this.comp["cups"][cupIndex];
@@ -472,14 +472,14 @@ class Competition {
                 }
                 else if (person.status === this.STATUS.WAITING) {
                     let buttons = [];
-                    if (this.comp.settings.volunteersUnited === "true") {
+                    if (this.comp.settings.volunteersUnited) {
                         const types = ['scramble', 'judge', 'run'];
                         const gerunds = ['to scramble', 'to judge', 'to run'];
                         for (const typeIndex in types)
                             for (const solveIndex in possibleVolunteerSolves[types[typeIndex]]) {
                                 if (this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup]) {
                                     let text = this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup].name;
-                                    if (this.comp.settings.showCompetitorAsCupName === 'true') {
+                                    if (this.comp.settings.showCompetitorAsCupName) {
                                         text = this.comp.people[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].competitor].displayName;
                                     }
                                     if (this.comp.settings.volunteersUnited)
@@ -675,7 +675,7 @@ class Competition {
                             solveCount++;
                     if (solveCount < this.comp.solvesPerAverage) {
                         this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup, this.comp.solves[person.solve].event);
-                        if (this.comp.settings.partnerMode === 'true')
+                        if (this.comp.settings.partnerMode)
                             this.click(partnerId, { value: this.comp.people[uid].solve });
                     }
                     else {
@@ -696,13 +696,15 @@ class Competition {
                     this.comp.people[uid].status = this.STATUS.DEAD;
                 }
                 else if (value.value === "continue") {
-                    const oldFunction = this.webServer.onUserLinkGenerated;
-                    this.webServer.onUserLinkGenerated = (user, url) => {
-                        this.comp.people[uid].status = this.STATUS.COMPETE.CONTINUE;
-                        this.comp.people[uid].continueLink = url;
-                    };
-                    this.webServer.onNewUsers([person.discordUser]);
-                    this.webServer.onUserLinkGenerated = oldFunction;
+                    if (this.webServer) {
+                        const oldFunction = this.webServer.onUserLinkGenerated;
+                        this.webServer.onUserLinkGenerated = (user, url) => {
+                            this.comp.people[uid].status = this.STATUS.COMPETE.CONTINUE;
+                            this.comp.people[uid].continueLink = url;
+                        };
+                        this.webServer.onNewUsers([person.discordUser], () => { });
+                        this.webServer.onUserLinkGenerated = oldFunction;
+                    }
                 }
             }
         }
@@ -712,19 +714,19 @@ class Competition {
                 this.comp.people[uid].status = this.STATUS.ROLE_SELECT;
             }
             else if (this.comp.solves[value.value] !== undefined) {
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'scramble') {
+                if (this.comp.settings.volunteersUnited || person.type === 'scramble') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_SCRAMBLE) {
                         this.comp.people[uid].status = this.STATUS.SCRAMBLE.SCRAMBLING;
                         this.comp.people[uid].solve = value.value;
                     }
                 }
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'run') {
+                if (this.comp.settings.volunteersUnited || person.type === 'run') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_RUNNER) {
                         this.comp.people[uid].status = this.STATUS.RUN.RUNNING;
                         this.comp.people[uid].solve = value.value;
                     }
                 }
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'judge') {
+                if (this.comp.settings.volunteersUnited || person.type === 'judge') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_JUDGE) {
                         this.comp.people[uid].status = this.STATUS.JUDGE.JUDGING;
                         this.comp.people[uid].solve = value.value;
@@ -735,7 +737,7 @@ class Competition {
         }
         else if (person.status === this.STATUS.SCRAMBLE.SCRAMBLING) {
             if (person.solve !== undefined && value.value === "done") {
-                if (this.comp.settings.runnerEnabled === "true") {
+                if (this.comp.settings.runnerEnabled) {
                     this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_RUNNER;
                 }
                 else {
@@ -744,7 +746,7 @@ class Competition {
                 this.comp.people[uid].status = this.STATUS.WAITING;
                 let oldSolve = this.comp.people[uid].solve;
                 delete this.comp.people[uid].solve;
-                if (this.comp.settings.partnerMode === 'true') {
+                if (this.comp.settings.partnerMode) {
                     console.log('clicked');
                     this.click(uid, { value: oldSolve });
                 }
@@ -781,7 +783,7 @@ class Competition {
                 this.comp.solves[person.solve].penalty = value.value;
                 this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_CONFIRMATION;
                 this.comp.people[uid].status = this.STATUS.JUDGE.AWAITING_CONFIRMATION;
-                if (this.comp.settings.confirmTimes === 'false') {
+                if (!this.comp.settings.confirmTimes) {
                     for (const otherUid in this.comp.people) {
                         const otherPerson = this.comp.people[otherUid];
                         if (otherPerson.solve && otherPerson.status === this.STATUS.COMPETE.COMPETING && otherPerson.solve.toString() === person.solve.toString()) {
@@ -823,21 +825,24 @@ class Competition {
                 roleSelect: ["organizer_chosen"],
                 events: ["three"],
                 cupNumbers: "chosen",
-                runnerEnabled: "false",
-                volunteersUnited: "true",
-                showDead: "false",
-                partnerMode: "false",
-                confirmTimes: "true",
-                showCompetitorAsCupName: "false",
-                autoCupSelect: "false",
+                runnerEnabled: false,
+                volunteersUnited: true,
+                showDead: false,
+                partnerMode: false,
+                confirmTimes: true,
+                showCompetitorAsCupName: false,
+                autoCupSelect: false,
             },
             serverData: {
-                url: process.env.URL,
-                port: process.env.PORT,
+                url: process.env.URL || "http://localhost:3000",
+                port: process.env.PORT || "3000",
                 UIDs: {},
                 tokens: {},
                 relogTokens: {},
-                socketCount: {},
+                socketCount: {
+                    "control": 0,
+                    "other": {}
+                },
             },
             discordData: {
                 userLinkChannels: {},

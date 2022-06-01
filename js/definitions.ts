@@ -1,6 +1,6 @@
 import {Snowflake} from "discord.js";
 
-export type event = "three" | "four" | "apple"
+export type event = "three" | "four" | "apple" | "two" | "pyra"
 
 export type CompBotUser = Snowflake | string
 

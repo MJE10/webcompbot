@@ -9,7 +9,7 @@ import {CompBotUser, UserLinkChannels} from "./definitions";
 
 require('dotenv').config();
 
-interface DiscordClientData {
+export interface DiscordClientData {
     userLinkChannels: UserLinkChannels;
 }
 

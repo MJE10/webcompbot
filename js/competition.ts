@@ -1,13 +1,74 @@
 import fs from 'fs';
-import DiscordClient from "./discordClient";
+import DiscordClient, {DiscordClientData} from "./discordClient";
 import WebServer from "./server";
 import generateScramble from "./scrambler";
+import {CompBotUser, CompBotUuid, event} from "./definitions";
+import {WebServerData} from "./server";
+
+type STATUS_SCRAMBLE = "scrambling";
+type STATUS_RUN = "running";
+type STATUS_JUDGE = "judging" | "judgeEnterPenalty" | "judgeAwaitingConfirmation";
+type STATUS_COMPETE = "chooseCup" | "choosePuzzle" | "competing" | "competitorFinished" | "competitorContinued";
+type STATUS_SELF_SERVE = "self_choosePuzzle" | "self_scramble" | "self_solving" | "self_enterPenalty";
+type STATUS_SOLVE = "awaitingScramble" | "awaitingRunner" | "awaitingJudge" | "solveJudging" | "awaitingConfirmation" | "complete" | "solveIsSelfServe";
+type STATUS_PERSON = STATUS_SCRAMBLE | STATUS_RUN | STATUS_JUDGE | STATUS_COMPETE | STATUS_SELF_SERVE;
+export type STATUS = "roleSelect" | "waiting" | "dead" | STATUS_SCRAMBLE | STATUS_RUN | STATUS_JUDGE | STATUS_COMPETE | STATUS_SELF_SERVE | STATUS_SOLVE;
+
+type CupId = number;
+type SolveId = number;
+type PersonId = number;
+export type Scramble = string;
+
+export interface Solve {
+    id: SolveId,
+    cup: CupId,
+    event: event,
+    competitor: CompBotUuid,
+    status: STATUS_SOLVE,
+    scramble: Scramble,
+}
+
+export interface Person {
+    id: PersonId,
+    discordUser: CompBotUser,
+    displayName: string,
+    discordTag: string,
+    status: STATUS_PERSON,
+    solve: SolveId,
+    action: {
+        type: any,
+        message: string,
+    }
+}
+
+export interface CompetitionData {
+    competitionId: number,
+    competitionName: string,
+    solvesPerAverage: number,
+    people: any,
+    solves: any,
+    cups: any,
+    settings: {
+        roleSelect: any,
+        events: Array<event>,
+        cupNumbers: "chosen" | "assigned",
+        runnerEnabled: boolean,
+        volunteersUnited: boolean,
+        showDead: boolean,
+        partnerMode: boolean,
+        confirmTimes: boolean,
+        showCompetitorAsCupName: boolean,
+        autoCupSelect: boolean,
+    },
+    serverData: WebServerData,
+    discordData: DiscordClientData,
+}
 
 export default class Competition {
 
-    comp: any;
+    comp: CompetitionData;
     discordClient: DiscordClient | null = null;
-    webServer: any;
+    webServer: WebServer | undefined;
 
     STATUS = {
         ROLE_SELECT: "roleSelect",
@@ -305,7 +366,7 @@ export default class Competition {
                                 buttons: buttons,
                             }
                         } else {
-                            if (this.comp.settings.autoCupSelect === 'true') {
+                            if (this.comp.settings.autoCupSelect) {
                                 // try to find an empty cup
                                 for (const cupIndex in this.comp["cups"]) {
                                     let cup = this.comp["cups"][cupIndex];
@@ -437,14 +498,14 @@ export default class Competition {
                     }
                 } else if (person.status === this.STATUS.WAITING) {
                     let buttons = [];
-                    if (this.comp.settings.volunteersUnited === "true") {
+                    if (this.comp.settings.volunteersUnited) {
                         const types = ['scramble', 'judge', 'run'];
                         const gerunds = ['to scramble', 'to judge', 'to run'];
                         for (const typeIndex in types)
                             for (const solveIndex in possibleVolunteerSolves[types[typeIndex]]) {
                                 if (this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup]) {
                                     let text = this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup].name;
-                                    if (this.comp.settings.showCompetitorAsCupName === 'true') {
+                                    if (this.comp.settings.showCompetitorAsCupName) {
                                         text = this.comp.people[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].competitor].displayName;
                                     }
                                     if (this.comp.settings.volunteersUnited) text += " (" + gerunds[typeIndex] + ")";
@@ -617,7 +678,7 @@ export default class Competition {
                     for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) solveCount++;
                     if (solveCount < this.comp.solvesPerAverage) {
                         this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup, this.comp.solves[person.solve].event);
-                        if (this.comp.settings.partnerMode === 'true') this.click(partnerId, {value:this.comp.people[uid].solve});
+                        if (this.comp.settings.partnerMode) this.click(partnerId, {value:this.comp.people[uid].solve});
                     } else {
                         this.comp.people[uid].status = this.STATUS.COMPETE.COMPLETE;
                     }
@@ -632,13 +693,15 @@ export default class Competition {
                 if (value.value === "quit") {
                     this.comp.people[uid].status = this.STATUS.DEAD;
                 } else if (value.value === "continue") {
-                    const oldFunction = this.webServer.onUserLinkGenerated;
-                    this.webServer.onUserLinkGenerated = (user: any, url: any) => {
-                        this.comp.people[uid].status = this.STATUS.COMPETE.CONTINUE;
-                        this.comp.people[uid].continueLink = url;
-                    };
-                    this.webServer.onNewUsers([person.discordUser]);
-                    this.webServer.onUserLinkGenerated = oldFunction;
+                    if (this.webServer) {
+                        const oldFunction = this.webServer.onUserLinkGenerated;
+                        this.webServer.onUserLinkGenerated = (user: any, url: any) => {
+                            this.comp.people[uid].status = this.STATUS.COMPETE.CONTINUE;
+                            this.comp.people[uid].continueLink = url;
+                        };
+                        this.webServer.onNewUsers([person.discordUser], () => {});
+                        this.webServer.onUserLinkGenerated = oldFunction;
+                    }
                 }
             }
         } else if (person.status === this.STATUS.WAITING) {
@@ -647,19 +710,19 @@ export default class Competition {
                 this.comp.people[uid].status = this.STATUS.ROLE_SELECT;
             }
             else if (this.comp.solves[value.value] !== undefined) {
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'scramble') {
+                if (this.comp.settings.volunteersUnited || person.type === 'scramble') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_SCRAMBLE) {
                         this.comp.people[uid].status = this.STATUS.SCRAMBLE.SCRAMBLING;
                         this.comp.people[uid].solve = value.value;
                     }
                 }
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'run') {
+                if (this.comp.settings.volunteersUnited || person.type === 'run') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_RUNNER) {
                         this.comp.people[uid].status = this.STATUS.RUN.RUNNING;
                         this.comp.people[uid].solve = value.value;
                     }
                 }
-                if (this.comp.settings.volunteersUnited === "true" || person.type === 'judge') {
+                if (this.comp.settings.volunteersUnited || person.type === 'judge') {
                     if (this.comp.solves[value.value].status === this.STATUS.SOLVE.AWAITING_JUDGE) {
                         this.comp.people[uid].status = this.STATUS.JUDGE.JUDGING;
                         this.comp.people[uid].solve = value.value;
@@ -669,7 +732,7 @@ export default class Competition {
             }
         } else if (person.status === this.STATUS.SCRAMBLE.SCRAMBLING) {
             if (person.solve !== undefined && value.value === "done") {
-                if (this.comp.settings.runnerEnabled === "true") {
+                if (this.comp.settings.runnerEnabled) {
                     this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_RUNNER;
                 } else {
                     this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_JUDGE;
@@ -677,7 +740,7 @@ export default class Competition {
                 this.comp.people[uid].status = this.STATUS.WAITING;
                 let oldSolve = this.comp.people[uid].solve;
                 delete this.comp.people[uid].solve;
-                if (this.comp.settings.partnerMode === 'true') {
+                if (this.comp.settings.partnerMode) {
                     console.log('clicked');
                     this.click(uid, {value:oldSolve});
                 }
@@ -708,7 +771,7 @@ export default class Competition {
                 this.comp.solves[person.solve].penalty = value.value;
                 this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_CONFIRMATION;
                 this.comp.people[uid].status = this.STATUS.JUDGE.AWAITING_CONFIRMATION;
-                if (this.comp.settings.confirmTimes === 'false') {
+                if (!this.comp.settings.confirmTimes) {
                     for (const otherUid in this.comp.people) {
                         const otherPerson = this.comp.people[otherUid];
                         if (otherPerson.solve && otherPerson.status === this.STATUS.COMPETE.COMPETING && otherPerson.solve.toString() === person.solve.toString()) {
@@ -750,21 +813,24 @@ export default class Competition {
                 roleSelect: ["organizer_chosen"],
                 events: ["three"], // ["three", "two", "four", "pyra", "apple"]
                 cupNumbers: "chosen",
-                runnerEnabled: "false",
-                volunteersUnited: "true",
-                showDead: "false",
-                partnerMode: "false",
-                confirmTimes: "true",
-                showCompetitorAsCupName: "false",
-                autoCupSelect: "false",
+                runnerEnabled: false,
+                volunteersUnited: true,
+                showDead: false,
+                partnerMode: false,
+                confirmTimes: true,
+                showCompetitorAsCupName: false,
+                autoCupSelect: false,
             },
             serverData: {
-                url: process.env.URL,
-                port: process.env.PORT,
+                url: process.env.URL || "http://localhost:3000",
+                port: process.env.PORT || "3000",
                 UIDs: {},
                 tokens: {},
                 relogTokens: {},
-                socketCount: {},
+                socketCount: {
+                    "control": 0,
+                    "other": {}
+                },
             },
             discordData: {
                 userLinkChannels: {},
@@ -778,7 +844,7 @@ export default class Competition {
         return JSON.parse(fs.readFileSync("competitions/directory.json").toString());
     }
 
-    editSetting(setting: any, value: any) {
+    editSetting(setting: string, value: any) {
         this.comp.settings[setting] = value;
         this.regenerateActions();
         this.save();

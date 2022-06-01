@@ -7,7 +7,7 @@ import { v4 as uuid_v4 } from 'uuid';
 import { Server as WssServer, WebSocket } from 'ws';
 import {CompBotWebSocketMessage, CompBotUuid, CompBotUser, CompBotToken} from "./definitions";
 
-interface WebServerData {
+export interface WebServerData {
     url: string
     port: string
     tokens: { [key: CompBotUser]: CompBotToken }
