@@ -11,15 +11,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 // noinspection JSCheckFunctionSignatures
 const discord_js_1 = require("discord.js");
-const discord_js = require('discord.js');
-const { Intents } = discord_js;
 require('dotenv').config();
 class DiscordClient {
     constructor(dataInput) {
         this.onUsersReact = (users) => { };
         this.onDataChanged = (data) => { };
         this.data = dataInput;
-        this.client = new discord_js_1.Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
+        this.client = new discord_js_1.Client({ intents: [discord_js_1.Intents.FLAGS.GUILDS, discord_js_1.Intents.FLAGS.GUILD_MESSAGES, discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
         this.client.once('ready', () => __awaiter(this, void 0, void 0, function* () {
             console.log('Ready!');
             const channel = yield this.client.channels.fetch(this.constants.CHANNEL_HOME);
@@ -32,21 +30,21 @@ class DiscordClient {
             CHANNEL_HOME: '921977324101046302',
             CATEGORY_COMPETITIONS: '886085837241085963',
             CHANNEL_RESULTS: '893985464955072573',
-            RESULTS_MESSAGE: '893986058377785364',
+            MESSAGE_RESULTS: '893986058377785364',
             ROLE_MODERATOR: '886246346779144252',
             MESSAGE_HOME: '921977727093973073',
-            CLIENT_SNOWFLAKE: '886086206444687393',
-            MJE10_SNOWFLAKE: '159045740457361409'
+            USER_CLIENT: '886086206444687393',
+            USER_MJE10: '159045740457361409'
         };
         this.waitingUsers = [];
         this.client.on('messageReactionAdd', (reaction) => __awaiter(this, void 0, void 0, function* () {
             const users = (yield reaction.users.fetch()).keys();
             // console.log(users);
             let first = users.next().value;
-            if (first !== this.constants.CLIENT_SNOWFLAKE)
+            if (first !== this.constants.USER_CLIENT)
                 yield reaction.remove();
             while (first !== undefined) {
-                if (first !== this.constants.CLIENT_SNOWFLAKE)
+                if (first !== this.constants.USER_CLIENT)
                     this.waitingUsers.push(first);
                 first = users.next().value;
             }
@@ -59,9 +57,8 @@ class DiscordClient {
     onUserLinkGenerated(user, link) {
         return __awaiter(this, void 0, void 0, function* () {
             let discordUser = yield this.client.users.fetch(user);
-            if (user in this.data.userLinkChannels) {
-                const guild = yield this.client.guilds.fetch(this.constants.GUILD_ID);
-                const channel = yield guild.channels.fetch(this.data.userLinkChannels[user]);
+            const channel = yield this.getUserChannel(user);
+            if (channel != null) {
                 yield channel.delete();
                 delete this.data.userLinkChannels[user];
             }
@@ -75,17 +72,28 @@ class DiscordClient {
     }
     onUserClickedLink(user) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (user in this.data.userLinkChannels) {
-                const guild = yield this.client.guilds.fetch(this.constants.GUILD_ID);
-                const channel = yield guild.channels.fetch(this.data.userLinkChannels[user]);
+            const channel = yield this.getUserChannel(user);
+            if (channel != null) {
                 yield channel.delete();
                 delete this.data.userLinkChannels[user];
                 this.onDataChanged(this.data);
             }
         });
     }
+    getUserChannel(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!(user in this.data.userLinkChannels))
+                return null;
+            const guild = yield this.client.guilds.fetch(this.constants.GUILD_ID);
+            const channel = yield guild.channels.fetch(this.data.userLinkChannels[user]);
+            if (channel instanceof discord_js_1.TextChannel)
+                return channel;
+            console.error(`Channel ${this.data.userLinkChannels[user]} is not a text channel`);
+            return null;
+        });
+    }
     isAdmin(id) {
-        return id === this.constants.MJE10_SNOWFLAKE;
+        return id === this.constants.USER_MJE10;
     }
 }
 exports.default = DiscordClient;

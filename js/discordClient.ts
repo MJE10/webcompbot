@@ -1,36 +1,39 @@
 // noinspection JSCheckFunctionSignatures
-import {Client, TextChannel} from "discord.js";
-
-const discord_js = require('discord.js');
-const { Intents } = discord_js;
+import {
+    Client,
+    TextChannel,
+    Intents,
+    Snowflake
+} from "discord.js";
+import {CompBotUser, UserLinkChannels} from "./definitions";
 
 require('dotenv').config();
 
-interface Data {
-    userLinkChannels: { [key: string]: string }
+interface DiscordClientData {
+    userLinkChannels: UserLinkChannels;
 }
 
 export default class DiscordClient {
-    private readonly data: Data;
+    private readonly data: DiscordClientData;
 
     client: Client;
     constants: {
-        GUILD_ID: string,
-        CHANNEL_HOME: string,
-        CATEGORY_COMPETITIONS: string,
-        CHANNEL_RESULTS: string,
-        RESULTS_MESSAGE: string,
-        ROLE_MODERATOR: string,
-        MESSAGE_HOME: string,
-        CLIENT_SNOWFLAKE: string,
-        MJE10_SNOWFLAKE: string
+        CHANNEL_HOME: Snowflake,
+        CHANNEL_RESULTS: Snowflake,
+        MESSAGE_RESULTS: Snowflake,
+        MESSAGE_HOME: Snowflake,
+        USER_CLIENT: Snowflake,
+        USER_MJE10: Snowflake
+        ROLE_MODERATOR: Snowflake,
+        CATEGORY_COMPETITIONS: Snowflake,
+        GUILD_ID: Snowflake,
     }
-    private waitingUsers: any[];
+    private waitingUsers: Snowflake[];
 
-    public onUsersReact = (users: any[]): void => {};
-    public onDataChanged = (data: any): void => {};
+    public onUsersReact = (users: string[]): void => {};
+    public onDataChanged = (data: DiscordClientData): void => {};
 
-    constructor(dataInput: Data) {
+    constructor(dataInput: DiscordClientData) {
 
         this.data = dataInput;
 
@@ -49,11 +52,11 @@ export default class DiscordClient {
             CHANNEL_HOME: '921977324101046302',
             CATEGORY_COMPETITIONS: '886085837241085963',
             CHANNEL_RESULTS: '893985464955072573',
-            RESULTS_MESSAGE: '893986058377785364',
+            MESSAGE_RESULTS: '893986058377785364',
             ROLE_MODERATOR: '886246346779144252',
             MESSAGE_HOME: '921977727093973073',
-            CLIENT_SNOWFLAKE: '886086206444687393',
-            MJE10_SNOWFLAKE: '159045740457361409'
+            USER_CLIENT: '886086206444687393',
+            USER_MJE10: '159045740457361409'
         }
 
         this.waitingUsers = [];
@@ -61,10 +64,10 @@ export default class DiscordClient {
         this.client.on('messageReactionAdd', async reaction => {
             const users = (await reaction.users.fetch()).keys();
             // console.log(users);
-            let first = users.next().value;
-            if (first !== this.constants.CLIENT_SNOWFLAKE) await reaction.remove();
+            let first: Snowflake | undefined = users.next().value;
+            if (first !== this.constants.USER_CLIENT) await reaction.remove();
             while (first !== undefined) {
-                if (first !== this.constants.CLIENT_SNOWFLAKE) this.waitingUsers.push(first);
+                if (first !== this.constants.USER_CLIENT) this.waitingUsers.push(first);
                 first = users.next().value;
             }
             this.onUsersReact(this.waitingUsers);
@@ -75,13 +78,12 @@ export default class DiscordClient {
         this.client.login(process.env.TOKEN).then();
     }
 
-    async onUserLinkGenerated(user: string, link: string) {
+    async onUserLinkGenerated(user: CompBotUser, link: string) {
         let discordUser = await this.client.users.fetch(user);
 
-        if (user in this.data.userLinkChannels) {
-            const guild = await this.client.guilds.fetch(this.constants.GUILD_ID);
-            const channel = await guild.channels.fetch(this.data.userLinkChannels[user]);
-            await (channel as TextChannel).delete();
+        const channel = await this.getUserChannel(user);
+        if (channel != null) {
+            await channel.delete();
             delete this.data.userLinkChannels[user];
         }
 
@@ -95,17 +97,28 @@ export default class DiscordClient {
         await new_channel.send('<@' + user + '> Click this link to go to your page: ' + link);
     }
 
-    async onUserClickedLink(user: string) {
-        if (user in this.data.userLinkChannels) {
-            const guild = await this.client.guilds.fetch(this.constants.GUILD_ID);
-            const channel = await guild.channels.fetch(this.data.userLinkChannels[user]);
-            await (channel as TextChannel).delete();
+    async onUserClickedLink(user: CompBotUser) {
+        const channel = await this.getUserChannel(user);
+        if (channel != null) {
+            await channel.delete();
             delete this.data.userLinkChannels[user];
             this.onDataChanged(this.data);
         }
     }
 
-    isAdmin(id: string): boolean {
-        return id === this.constants.MJE10_SNOWFLAKE;
+    async getUserChannel(user: CompBotUser): Promise<TextChannel | null> {
+        if (!(user in this.data.userLinkChannels)) return null;
+
+        const guild = await this.client.guilds.fetch(this.constants.GUILD_ID);
+        const channel = await guild.channels.fetch(this.data.userLinkChannels[user]);
+        if (channel instanceof TextChannel)
+            return channel;
+
+        console.error(`Channel ${this.data.userLinkChannels[user]} is not a text channel`);
+        return null;
+    }
+
+    isAdmin(id: Snowflake): boolean {
+        return id === this.constants.USER_MJE10;
     }
 }
