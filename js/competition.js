@@ -7,7 +7,6 @@ const fs_1 = __importDefault(require("fs"));
 const discordClient_1 = __importDefault(require("./discordClient"));
 const server_1 = __importDefault(require("./server"));
 const scrambler_1 = __importDefault(require("./scrambler"));
-const scrambler = new scrambler_1.default();
 class Competition {
     constructor() {
         this.discordClient = null;
@@ -893,7 +892,7 @@ class Competition {
             event: event,
             competitor: uid,
             status: this.STATUS.SOLVE.AWAITING_SCRAMBLE,
-            scramble: scrambler.generateScramble(event),
+            scramble: (0, scrambler_1.default)(event),
         };
         this.comp.people[uid].solve = nextSolveId;
         this.comp.people[uid].status = this.STATUS.COMPETE.COMPETING;

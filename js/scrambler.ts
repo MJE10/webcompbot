@@ -1,25 +1,17 @@
 const { execSync } = require("child_process");
 
-export default class Scrambler {
-    constructor() {}
+export default function generateScramble(type="three") {
+    // generate scramble
+    if (type === "apple") type = "three";
 
-    generateScramble(typeIn="three") {
-        // generate scramble
-        let type = typeIn;
-        if (type === "apple") type = "three";
-        console.log('scramble generated!');
+    const tnoodlePath: string = process.env.TNOODLE_PATH || "tnoodle";
+    const imagesPath = "./public/images/";
 
-        const tnoodlePath = process.env.TNOODLE_PATH;
-        const imagesPath = "./public/images/";
+    // generate scramble
+    const scramble = execSync(tnoodlePath + " scramble -p "+type).toString().trim();
 
-        const scramble = execSync(tnoodlePath + " scramble -p "+type).toString().trim();
-        console.log(scramble);
+    // generate image
+    execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "'+ scramble + '"');
 
-        // generate image
-
-        execSync(tnoodlePath + ' draw -o "' + imagesPath + scramble + '.svg" -p ' + type + ' -s "'+ scramble + '"');
-        console.log('image generated!');
-
-        return scramble;
-    }
+    return scramble;
 }

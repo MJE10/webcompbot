@@ -1,9 +1,7 @@
 import fs from 'fs';
 import DiscordClient from "./discordClient";
 import WebServer from "./server";
-import Scrambler from "./scrambler";
-
-const scrambler = new Scrambler();
+import generateScramble from "./scrambler";
 
 export default class Competition {
 
@@ -822,7 +820,7 @@ export default class Competition {
             event: event,
             competitor: uid,
             status: this.STATUS.SOLVE.AWAITING_SCRAMBLE,
-            scramble: scrambler.generateScramble(event),
+            scramble: generateScramble(event),
         }
         this.comp.people[uid].solve = nextSolveId;
         this.comp.people[uid].status = this.STATUS.COMPETE.COMPETING;
