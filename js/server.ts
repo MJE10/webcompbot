@@ -158,19 +158,19 @@ export default class WebServer {
                             if (isAdmin) competition.setSolvesPerAverage(data.number);
                         }
                         if (data.eType === 'setShowDead') {
-                            if (isAdmin) competition.editSetting('showDead', (competition.comp.settings.showDead === 'true' ? 'false' : 'true'))
+                            if (isAdmin) competition.editSetting('showDead', !competition.comp.settings.showDead)
                         }
                         if (data.eType === 'togglePartner') {
-                            if (isAdmin) competition.editSetting('partnerMode', (competition.comp.settings.partnerMode === 'true' ? 'false' : 'true'))
+                            if (isAdmin) competition.editSetting('partnerMode', !competition.comp.settings.partnerMode)
                         }
                         if (data.eType === 'setConfirmTimes') {
-                            if (isAdmin) competition.editSetting('confirmTimes', (competition.comp.settings.confirmTimes === 'true' ? 'false' : 'true'))
+                            if (isAdmin) competition.editSetting('confirmTimes', !competition.comp.settings.confirmTimes)
                         }
                         if (data.eType === 'setShowCompetitorAsCupName') {
-                            if (isAdmin) competition.editSetting('showCompetitorAsCupName', (competition.comp.settings.showCompetitorAsCupName === 'true' ? 'false' : 'true'))
+                            if (isAdmin) competition.editSetting('showCompetitorAsCupName', !competition.comp.settings.showCompetitorAsCupName)
                         }
                         if (data.eType === 'autoCupSelect') {
-                            if (isAdmin) competition.editSetting('autoCupSelect', (competition.comp.settings.autoCupSelect === 'true' ? 'false' : 'true'))
+                            if (isAdmin) competition.editSetting('autoCupSelect', !competition.comp.settings.autoCupSelect)
                         }
                         if (data.eType === 'newComp') {
                             if (isAdmin) competition.newComp(data.name);
@@ -184,7 +184,9 @@ export default class WebServer {
                         }
                         if (data.eType === 'editSetting') {
                             if (isAdmin) {
-                                this.competition.editSetting(data.setting, data.value);
+                                // if (data.setting === '') {
+                                //     this.competition.editSetting(data.setting, data.value);
+                                // }
                             }
                         }
                         if (data.eType === 'solveChangeResult') {

@@ -48,7 +48,7 @@ class DiscordClient {
                     this.waitingUsers.push(first);
                 first = users.next().value;
             }
-            this.onUsersReact(this.waitingUsers);
+            this.onUsersReact(this.waitingUsers, this.onUserLinkGenerated);
             this.waitingUsers = [];
             yield reaction.message.react("👍");
         }));

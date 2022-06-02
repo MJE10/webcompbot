@@ -30,7 +30,7 @@ export default class DiscordClient {
     }
     private waitingUsers: Snowflake[];
 
-    public onUsersReact = (users: string[]): void => {};
+    public onUsersReact = (users: string[], onUserLinkGenerated: (user: CompBotUser, link: string) => void): void => {};
     public onDataChanged = (data: DiscordClientData): void => {};
 
     constructor(dataInput: DiscordClientData) {
@@ -70,7 +70,7 @@ export default class DiscordClient {
                 if (first !== this.constants.USER_CLIENT) this.waitingUsers.push(first);
                 first = users.next().value;
             }
-            this.onUsersReact(this.waitingUsers);
+            this.onUsersReact(this.waitingUsers, this.onUserLinkGenerated);
             this.waitingUsers = [];
             await reaction.message.react("👍");
         });
