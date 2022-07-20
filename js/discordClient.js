@@ -14,7 +14,7 @@ const discord_js_1 = require("discord.js");
 require('dotenv').config();
 class DiscordClient {
     constructor(dataInput) {
-        this.onUsersReact = (users) => { };
+        this.onUsersReact = (users, onUserLinkGenerated) => { };
         this.onDataChanged = (data) => { };
         this.data = dataInput;
         this.client = new discord_js_1.Client({ intents: [discord_js_1.Intents.FLAGS.GUILDS, discord_js_1.Intents.FLAGS.GUILD_MESSAGES, discord_js_1.Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
