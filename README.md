@@ -7,19 +7,22 @@
 
 ## Prerequisites
 
-A web server with a public URL
+A physical web server or other computer, with a public URL
 
-NodeJs (https://nodejs.org/en/download/)
+[NodeJs](https://nodejs.org/en/download/)
 
-Tnoodle CLI (https://github.com/SpeedcuberOSS/tnoodle-cli)
+[Typescript compiler](https://www.typescriptlang.org/download)
+
+[Tnoodle CLI](https://github.com/SpeedcuberOSS/tnoodle-cli)
 
 ---
 
 ## Installation
 
 1. Clone the repository
-2. Install dependencies `npm install`
-3. Create .env file with the following variables:
+2. Install dependencies with `npm install`
+3. Compile typescript with `tsc` in the top level directory
+4. Create .env file in the top level directory with the following variables:
 
 ```
 token=
@@ -28,7 +31,7 @@ PORT=
 tnoodlePath=
 ```
 
-`token` is the bot token
+`token` is the bot token from Discord
 
 `URL` is the public URL of the web server
 
@@ -36,4 +39,4 @@ tnoodlePath=
 
 `tnoodlePath` is the path to the tnoodle executable
 
-4. Run the bot `node .`
+5. Run the bot with `node .`
