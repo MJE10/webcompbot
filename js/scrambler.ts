@@ -1,8 +1,8 @@
-import {event} from "./definitions";
+import {CompBotEvent} from "./definitions";
 
 const { execSync } = require("child_process");
 
-export default function generateScramble(type:event) {
+export default function generateScramble(type:CompBotEvent) {
     // generate scramble
     if (type === "apple") type = "three";
 

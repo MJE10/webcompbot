@@ -86,7 +86,7 @@ type NewTokenMessage = MessageBase & {
 
 type ClickMessage = MessageBase & {
     eType: "click",
-    click: string,
+    click: {value: string},
 }
 
 export type CompBotWebSocketMessage = SimpleMessage | NameMessage | NumberMessage | IdMessage | SettingMessage |

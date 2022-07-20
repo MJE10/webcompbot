@@ -62,12 +62,12 @@ export interface BasicPerson {
 
 export interface NewPerson extends BasicPerson {
     type: "NEW",
-    status: "roleSelect"
+    status: "roleSelect" | "dead"
 }
 
 export interface OrganizerChosenPerson extends BasicPerson {
     type: "organizer_chosen",
-    status: "roleSelect"
+    status: "roleSelect" | "dead"
 }
 
 export interface Competitor extends BasicPerson {
@@ -130,45 +130,6 @@ export default class Competition {
     comp: CompetitionData;
     discordClient: DiscordClient | null = null;
     webServer: WebServer | undefined;
-
-    // STATUS = {
-    //     ROLE_SELECT: "roleSelect",
-    //     WAITING: "waiting",
-    //     DEAD: "dead",
-    //     SCRAMBLE: {
-    //         SCRAMBLING: "scrambling",
-    //     },
-    //     RUN: {
-    //         RUNNING: "running",
-    //     },
-    //     JUDGE: {
-    //         JUDGING: "judging",
-    //         ENTER_PENALTY: "judgeEnterPenalty",
-    //         AWAITING_CONFIRMATION: "judgeAwaitingConfirmation",
-    //     },
-    //     COMPETE: {
-    //         CHOOSE_CUP: "chooseCup",
-    //         CHOOSE_PUZZLE: "choosePuzzle",
-    //         COMPETING: "competing",
-    //         COMPLETE: "competitorFinished",
-    //         CONTINUE: "competitorContinued",
-    //     },
-    //     SELF_SERVE: {
-    //         CHOOSE_PUZZLE: "self_choosePuzzle",
-    //         SCRAMBLING: "self_scramble",
-    //         SOLVING: "self_solving",
-    //         ENTER_PENALTY: "self_enterPenalty",
-    //     },
-    //     SOLVE: {
-    //         AWAITING_SCRAMBLE: "awaitingScramble",
-    //         AWAITING_RUNNER: "awaitingRunner",
-    //         AWAITING_JUDGE: "awaitingJudge",
-    //         JUDGING: "solveJudging",
-    //         AWAITING_CONFIRMATION: "awaitingConfirmation",
-    //         COMPLETE: "complete",
-    //         SELF_SERVE: "solveIsSelfServe"
-    //     }
-    // }
 
     constructor() {
         if (fs.existsSync("competitions/default.json")) {
@@ -392,12 +353,6 @@ export default class Competition {
                                 { text: "Quit", value: "quit" },
                             ]
                         }
-                    } else if (person.status === "dead") {
-                        this.comp.people[uid].action = {
-                            type: "newLink",
-                            message: "Loading...",
-                            link: this.comp.serverData.url,
-                        }
                     }
                 } else if (person.type === 'organizer_chosen') {
                     if ((this.comp.settings.roleSelect.length === 1 && this.comp.settings.roleSelect[0] !== 'organizer_chosen')
@@ -415,12 +370,13 @@ export default class Competition {
                     if (person.status === "chooseCup") {
                         if (this.comp.settings.cupNumbers === 'chosen') {
                             let buttons = [];
-                            for (const cupId in this.comp.cups) {
+                            for (const cupIdStr in this.comp.cups) {
+                                const cupId = parseInt(cupIdStr);
                                 let cupIsUsed = false;
                                 for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status !== "complete"
                                     && this.comp.solves[solveId].cup === cupId)
                                     cupIsUsed = true;
-                                if (!cupIsUsed) buttons.push({text: this.comp.cups[cupId].name, value: cupId});
+                                if (!cupIsUsed) buttons.push({text: this.comp.cups[cupId].name, value: cupId.toString()});
                             }
                             let message = "Please choose which cup you are going to use:";
                             if (buttons.length === 0) message = "Waiting for organizer to add cups...";
@@ -433,14 +389,15 @@ export default class Competition {
                         } else {
                             if (this.comp.settings.autoCupSelect) {
                                 // try to find an empty cup
-                                for (const cupIndex in this.comp["cups"]) {
+                                for (const cupIndexStr in this.comp["cups"]) {
+                                    const cupIndex = parseInt(cupIndexStr);
                                     let cup = this.comp["cups"][cupIndex];
                                     let cupTaken = false;
                                     for (const solveIndex in this.comp["solves"]) if (this.comp["solves"][solveIndex].status !== 'complete'
                                         && this.comp["solves"][solveIndex].cup === cupIndex)
                                         cupTaken = true;
                                     if (!cupTaken) {
-                                        this.click(uid, {value:cupIndex});
+                                        this.click(uid, {value: cupIndex.toString()});
                                         repeat = true;
                                         break;
                                     }
@@ -551,12 +508,6 @@ export default class Competition {
                             message: "<a href='" + person.continueLink + "'>Click here!</a>",
                             link: person.continueLink,
                         }
-                    } else if (person.status === "dead") {
-                        this.comp.people[uid].action = {
-                            type: "newLink",
-                            message: "Loading...",
-                            link: this.comp.serverData.url,
-                        }
                     } else {
                         this.comp.people[uid].action = {
                             type: "message",
@@ -570,8 +521,8 @@ export default class Competition {
                         const gerunds = ['to scramble', 'to judge', 'to run'];
                         for (const typeIndex in types)
                             for (const solveIndex in possibleVolunteerSolves[types[typeIndex]]) {
-                                if (this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup]) {
-                                    let text = this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup].name;
+                                if (this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup as CupId]) {
+                                    let text = this.comp.cups[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].cup as CupId].name;
                                     if (this.comp.settings.showCompetitorAsCupName) {
                                         text = this.comp.people[this.comp.solves[possibleVolunteerSolves[types[typeIndex]][solveIndex]].competitor].displayName;
                                     }
@@ -582,7 +533,7 @@ export default class Competition {
                             }
                     } else {
                         for (const solveIndex in possibleVolunteerSolves[person.type])
-                            buttons.push({ text:this.comp.cups[this.comp.solves[possibleVolunteerSolves[person.type][solveIndex]].cup].name,
+                            buttons.push({ text:this.comp.cups[this.comp.solves[possibleVolunteerSolves[person.type][solveIndex]].cup as CupId].name,
                                 value: possibleVolunteerSolves[person.type][solveIndex].toString() });
                     }
                     if (buttons.length === 0) {
@@ -603,7 +554,7 @@ export default class Competition {
                     const scramble = this.comp.solves[person.solve].scramble;
                     this.comp.people[uid].action = {
                         type: "imagesAndButtons",
-                        message: "Scramble for " + this.comp.cups[this.comp.solves[person.solve].cup].name + "&#10;&#13;" + scramble,
+                        message: "Scramble for " + this.comp.cups[this.comp.solves[person.solve].cup as CupId].name + "&#10;&#13;" + scramble,
                         // images: ['http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble,
                         //     'http://cube.rider.biz/visualcube.png?fmt=png&size=300&alg=x2' + scramble + 'z2y'],
                         images: ['images/'+scramble+'.svg'],
@@ -650,12 +601,6 @@ export default class Competition {
                         type: "message",
                         message: "Waiting for the competitor to confirm their result..."
                     }
-                } else if (person.status === "dead") {
-                    this.comp.people[uid].action = {
-                        type: "newLink",
-                        message: "Loading...",
-                        link: this.comp.serverData.url,
-                    }
                 } else {
                     this.comp.people[uid].action = {
                         type: "message",
@@ -672,7 +617,7 @@ export default class Competition {
         if (person.type === "NEW") {
             if (person.status === "roleSelect") {
                 if (value.value === 'quit') {
-                    this.comp.people[uid].status = "dead";
+                    person.status = "dead";
                 }
                 else this.choosePersonTypeHelper(uid, value.value);
             }
@@ -681,32 +626,32 @@ export default class Competition {
                 this.comp.solves[person.solve].status = "complete";
                 this.comp.solves[person.solve].result = 0;
                 this.comp.solves[person.solve].penalty = 'dnf';
-                this.comp.people[uid].status = "dead";
+                person.status = "dead";
             } else {
                 if (person.status === "self_choosePuzzle") {
                     if (value.value === 'cancel') {
-                        this.comp.people[uid].type = "NEW";
-                        this.comp.people[uid].status = "roleSelect";
-                    }
-                    if (this.comp.settings.events.includes(value.value as CompBotEvent)) {
+                        person = person as unknown as NewPerson;
+                        person.type = "NEW";
+                        person.status = "roleSelect";
+                    } else if (this.comp.settings.events.includes(value.value as CompBotEvent)) {
                         this.choosePersonCupHelper(uid, null, value.value);
-                        this.comp.people[uid].status = "scrambling";
+                        person.status = "self_scramble";
                         this.comp.solves[person.solve].status = "solveIsSelfServe";
                     }
                 } else if (person.status === "self_scramble" && value.value === 'done') {
                     person.status = "self_solving";
                 } else if (person.status === "self_solving" && !isNaN(parseInt(value.value))) {
                     this.comp.solves[person.solve].result = parseFloat(value.value);
-                    this.comp.people[uid].status = "self_enterPenalty";
+                    person.status = "self_enterPenalty";
                 } else if (person.status === "self_enterPenalty") {
                     if (value.value === "none" || value.value === "+2" || value.value === "dnf") {
                         this.comp.solves[person.solve].penalty = value.value;
 
                         this.comp.solves[person.solve].status = "complete";
-                        this.comp.people[uid].status = "self_choosePuzzle";
+                        person.status = "self_choosePuzzle";
                     }
                 } else if (person.status === "dead") {
-                    this.comp.people[uid].action = {
+                    person.action = {
                         type: "newLink",
                         message: "Loading...",
                         link: this.comp.serverData.url,
@@ -716,55 +661,67 @@ export default class Competition {
         } else if (person.type === 'compete') {
             if (person.status === "chooseCup") {
                 if (value.value === 'cancel') {
-                    this.comp.people[uid].type = "NEW";
-                    this.comp.people[uid].status = "roleSelect";
+                    person = person as unknown as NewPerson;
+                    person.type = "NEW";
+                    person.status = "roleSelect";
                 }
                 else {
-                    this.comp.people[uid].temp_cup = parseFloat(value.value);
-                    this.comp.people[uid].status = "choosePuzzle";
+                    person.temp_cup = parseFloat(value.value);
+                    person.status = "choosePuzzle";
                 }
             } else if (person.status === "choosePuzzle") {
                 if (value.value === 'cancel') {
-                    this.comp.people[uid].type = "NEW";
-                    this.comp.people[uid].status = "roleSelect";
+                    person = person as unknown as NewPerson;
+                    person.type = "NEW";
+                    person.status = "roleSelect";
                 }
                 if (this.comp.settings.events.includes(value.value as CompBotEvent)) {
-                    this.choosePersonCupHelper(uid, this.comp.people[uid].temp_cup | null, value.value);
+                    this.choosePersonCupHelper(uid, person.temp_cup === undefined ? null : person.temp_cup, value.value);
                 }
             } else if (this.comp.solves[person.solve].status === "awaitingConfirmation") {
                 if (value.value === "yes") {
                     this.comp.solves[person.solve].status = "complete";
                     let partnerId = null;
-                    for (const judgeId in this.comp.people) if (this.comp.people[judgeId].status === "awaitingConfirmation"
-                        && this.comp.people[judgeId].solve.toString() === person.solve.toString()) {
-                        this.comp.people[judgeId].status = "waiting";
-                        partnerId = judgeId;
+                    for (const judgeId in this.comp.people) {
+                        let possibleJudge = this.comp.people[judgeId];
+                        if (possibleJudge.status === "judgeAwaitingConfirmation"
+                            && (possibleJudge.solve as SolveId).toString() === person.solve.toString()) {
+                            possibleJudge.status = "waiting";
+                            partnerId = judgeId;
+                        }
                     }
                     // count the solves they've already done
                     let solveCount = 0;
                     for (const solveId in this.comp.solves) if (this.comp.solves[solveId].competitor === uid) solveCount++;
                     if (solveCount < this.comp.solvesPerAverage) {
                         this.choosePersonCupHelper(uid, this.comp.solves[person.solve].cup, this.comp.solves[person.solve].event);
-                        if (this.comp.settings.partnerMode) this.click(partnerId, {value:this.comp.people[uid].solve});
+                        if (partnerId == null) {
+                            console.log("Missing partner!");
+                        } else {
+                            if (this.comp.settings.partnerMode) this.click(partnerId, {value: person.solve.toString()});
+                        }
                     } else {
-                        this.comp.people[uid].status = "competing";
+                        person.status = "competing";
                     }
                 } else if (value.value === "no") {
                     this.comp.solves[person.solve].status = "solveJudging";
-                    for (const judgeId in this.comp.people) if (this.comp.people[judgeId].status === "judgeAwaitingConfirmation"
-                        && this.comp.people[judgeId].solve.toString() === person.solve.toString()) {
-                        this.comp.people[judgeId].status = "judging";
+                    for (const judgeId in this.comp.people) {
+                        let possibleJudge = this.comp.people[judgeId];
+                        if (possibleJudge.status === "judgeAwaitingConfirmation"
+                            && (possibleJudge.solve as SolveId).toString() === person.solve.toString()) {
+                            this.comp.people[judgeId].status = "judging";
+                        }
                     }
                 }
-            } else if (person.status === this.STATUS.COMPETE.COMPLETE) {
+            } else if (person.status === "competitorFinished") {
                 if (value.value === "quit") {
-                    this.comp.people[uid].status = "dead";
+                    person.status = "dead";
                 } else if (value.value === "continue") {
                     if (this.webServer) {
                         const oldFunction = this.webServer.onUserLinkGenerated;
                         this.webServer.onUserLinkGenerated = (user: any, url: any) => {
-                            this.comp.people[uid].status = "competitorContinued";
-                            this.comp.people[uid].continueLink = url;
+                            person.status = "competitorContinued";
+                            person.continueLink = url;
                         };
                         this.webServer.onNewUsers([person.discordUser], () => {});
                         this.webServer.onUserLinkGenerated = oldFunction;
@@ -773,27 +730,28 @@ export default class Competition {
             }
         } else if (person.status === "waiting") {
             if (value.value === 'home') {
-                this.comp.people[uid].type = "NEW";
-                this.comp.people[uid].status = "roleSelect";
+                person = person as unknown as NewPerson;
+                person.type = "NEW";
+                person.status = "roleSelect";
             }
-            else if (value.value as SolveId in this.comp.solves) {
-                const solve = this.comp.solves[value.value as SolveId];
+            else if (parseInt(value.value) in this.comp.solves) {
+                const solve = this.comp.solves[parseInt(value.value)];
                 if (this.comp.settings.volunteersUnited || person.type === 'scramble') {
                     if (solve.status === "awaitingScramble") {
-                        this.comp.people[uid].status = "scrambling";
-                        (this.comp.people[uid] as Scrambler).solve = value.value as SolveId;
+                        person.status = "scrambling";
+                        (person as Scrambler).solve = parseInt(value.value);
                     }
                 }
                 if (this.comp.settings.volunteersUnited || person.type === 'run') {
                     if (solve.status === "awaitingRunner") {
-                        this.comp.people[uid].status = "running";
-                        (this.comp.people[uid] as Runner).solve = value.value as SolveId;
+                        person.status = "running";
+                        (person as Runner).solve = parseInt(value.value);
                     }
                 }
                 if (this.comp.settings.volunteersUnited || person.type === 'judge') {
                     if (solve.status === "awaitingJudge") {
-                        this.comp.people[uid].status = "judging";
-                        (this.comp.people[uid] as Judge).solve = value.value as SolveId;
+                        person.status = "judging";
+                        (person as Judge).solve = parseInt(value.value);
                         solve.status = "solveJudging";
                     }
                 }
@@ -805,53 +763,54 @@ export default class Competition {
                 } else {
                     this.comp.solves[person.solve].status = "awaitingJudge";
                 }
-                this.comp.people[uid].status = "waiting";
-                let oldSolve = this.comp.people[uid].solve;
-                delete this.comp.people[uid].solve;
+                person.status = "waiting";
+                let oldSolve = person.solve;
+                person.solve = null;
                 if (this.comp.settings.partnerMode) {
                     console.log('clicked');
-                    this.click(uid, {value:oldSolve});
+                    this.click(uid, {value: oldSolve.toString()});
                 }
-            } else if (person.solve !== undefined && value.value === "cancel") {
-                this.comp.people[uid].status = "waiting";
-                delete this.comp.people[uid].solve;
+            } else if (person.solve !== null && value.value === "cancel") {
+                person.status = "waiting";
+                person.solve = null;
             }
-        } else if (person.status === this.STATUS.RUN.RUNNING) {
-            if (person.solve !== undefined && value.value === "done") {
-                this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_JUDGE;
-                this.comp.people[uid].status = "waiting";
-                delete this.comp.people[uid].solve;
-            } else if (person.solve !== undefined && value.value === "cancel") {
-                this.comp.people[uid].status = "waiting";
-                delete this.comp.people[uid].solve;
+        } else if (person.status === "running") {
+            if (person.solve !== null && value.value === "done") {
+                this.comp.solves[person.solve].status = "awaitingJudge";
+                person.status = "waiting";
+                person.solve = null;
+            } else if (person.solve !== null && value.value === "cancel") {
+                person.status = "waiting";
+                person.solve = null;
             }
-        } else if (person.status === this.STATUS.JUDGE.JUDGING) {
-            if (person.solve !== undefined && !isNaN(parseInt(value.value))) {
-                this.comp.solves[person.solve].result = value.value;
-                this.comp.people[uid].status = this.STATUS.JUDGE.ENTER_PENALTY;
-            } else if (person.solve !== undefined && value.value === "cancel") {
-                this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_JUDGE;
-                this.comp.people[uid].status = "waiting";
-                delete this.comp.people[uid].solve;
+        } else if (person.status === "judging") {
+            if (person.solve !== null && !isNaN(parseInt(value.value))) {
+                this.comp.solves[person.solve].result = parseFloat(value.value);
+                person.status = "judgeEnterPenalty";
+            } else if (person.solve !== null && value.value === "cancel") {
+                this.comp.solves[person.solve].status = "awaitingJudge";
+                person.status = "waiting";
+                person.solve = null;
             }
-        } else if (person.status === this.STATUS.JUDGE.ENTER_PENALTY) {
+        } else if (person.status === "judgeEnterPenalty") {
+            person.solve = person.solve as SolveId;
             if (value.value === "none" || value.value === "+2" || value.value === "dnf") {
                 this.comp.solves[person.solve].penalty = value.value;
-                this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_CONFIRMATION;
-                this.comp.people[uid].status = this.STATUS.JUDGE.AWAITING_CONFIRMATION;
+                this.comp.solves[person.solve].status = "awaitingConfirmation";
+                person.status = "judgeAwaitingConfirmation";
                 if (!this.comp.settings.confirmTimes) {
                     for (const otherUid in this.comp.people) {
                         const otherPerson = this.comp.people[otherUid];
-                        if (otherPerson.solve && otherPerson.status === this.STATUS.COMPETE.COMPETING && otherPerson.solve.toString() === person.solve.toString()) {
+                        if (otherPerson.status === "competing" && otherPerson.solve && otherPerson.solve.toString() === person.solve.toString()) {
                             this.click(otherUid, {value:'yes'});
                         }
                     }
                 }
             } else if (value.value === "cancel") {
-                this.comp.solves[person.solve].status = this.STATUS.SOLVE.AWAITING_JUDGE;
-                delete this.comp.solves[person.solve].result;
-                this.comp.people[uid].status = "waiting";
-                delete this.comp.people[uid].solve;
+                this.comp.solves[person.solve].status = "awaitingJudge";
+                this.comp.solves[person.solve].result = 0;
+                person.status = "waiting";
+                person.solve = null;
             }
         }
         this.regenerateActions();
@@ -947,8 +906,8 @@ export default class Competition {
         let person = this.comp.people[uid];
         if (person.type === "compete") {
             let maxSolveId = 0;
-            for (const solveIndex in this.comp.solves) if (parseInt(this.comp.solves[solveIndex].id) > maxSolveId)
-                maxSolveId = parseInt(this.comp.solves[solveIndex].id);
+            for (const solveIndex in this.comp.solves) if (this.comp.solves[solveIndex].id > maxSolveId)
+                maxSolveId = this.comp.solves[solveIndex].id;
             let nextSolveId = maxSolveId + 1;
             this.comp.solves[nextSolveId] = {
                 penalty: "none",
