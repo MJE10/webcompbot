@@ -9,14 +9,29 @@ import {CompBotUser, UserLinkChannels} from "./definitions";
 
 require('dotenv').config();
 
+/**
+ * file: discordClient.ts
+ * author: Michael Elia, michaeljelia@gmail.com
+ * date: 2022/07/20
+ * ---
+ * Handles all interactions between the Competition and the Discord bot/server
+ */
+
 export interface DiscordClientData {
+    // UserLinkChannels relates CompBotUsers to corresponding discord channel snowflakes
     userLinkChannels: UserLinkChannels;
 }
 
+/**
+ * Handles all interactions between the Competition and the Discord bot/server
+ */
 export default class DiscordClient {
     private readonly data: DiscordClientData;
 
+    // the discord library object that handles API interaction
     client: Client;
+
+    // discord related constants
     constants: {
         CHANNEL_HOME: Snowflake,
         CHANNEL_RESULTS: Snowflake,
@@ -28,12 +43,36 @@ export default class DiscordClient {
         CATEGORY_COMPETITIONS: Snowflake,
         GUILD_ID: Snowflake,
     }
+
+    // users that have reacted to the home message but who have not yet received a link
     private waitingUsers: Snowflake[];
 
+    // called by DiscordClient to let WebServer know about new users; WebServer will then return the new Uuids
     public onUsersReact = (users: string[], onUserLinkGenerated: (user: CompBotUser, link: string) => void): void => {};
+    // called by DiscordClient to let Competition know that its save data has changed; Competition will then
+    // write the new save to the json file
     public onDataChanged = (data: DiscordClientData): void => {};
 
+    /**
+     * Initializes DiscordClient
+     * @constructor
+     * @param dataInput If this game was loaded uses a .json file from a previous game, then this object's userLinkChannels
+     * field describes the relationship between users and their corresponding Discord channels
+     */
     constructor(dataInput: DiscordClientData) {
+
+        // these should be moved to the .env file
+        this.constants = {
+            GUILD_ID: '881234639736414279',
+            CHANNEL_HOME: '921977324101046302',
+            CATEGORY_COMPETITIONS: '886085837241085963',
+            CHANNEL_RESULTS: '893985464955072573',
+            MESSAGE_RESULTS: '893986058377785364',
+            ROLE_MODERATOR: '886246346779144252',
+            MESSAGE_HOME: '921977727093973073',
+            USER_CLIENT: '886086206444687393',
+            USER_MJE10: '159045740457361409'
+        }
 
         this.data = dataInput;
 
@@ -46,18 +85,6 @@ export default class DiscordClient {
                 await (channel as TextChannel).messages.fetch(this.constants.MESSAGE_HOME);
             }
         });
-
-        this.constants = {
-            GUILD_ID: '881234639736414279',
-            CHANNEL_HOME: '921977324101046302',
-            CATEGORY_COMPETITIONS: '886085837241085963',
-            CHANNEL_RESULTS: '893985464955072573',
-            MESSAGE_RESULTS: '893986058377785364',
-            ROLE_MODERATOR: '886246346779144252',
-            MESSAGE_HOME: '921977727093973073',
-            USER_CLIENT: '886086206444687393',
-            USER_MJE10: '159045740457361409'
-        }
 
         this.waitingUsers = [];
 
@@ -78,6 +105,11 @@ export default class DiscordClient {
         this.client.login(process.env.TOKEN).then();
     }
 
+    /**
+     * Sends the web invite link to the user using a private Discord channel
+     * @param user the user to whom we should send the link
+     * @param link the link to the online site
+     */
     async onUserLinkGenerated(user: CompBotUser, link: string) {
         let discordUser = await this.client.users.fetch(user);
 
@@ -97,6 +129,10 @@ export default class DiscordClient {
         await new_channel.send('<@' + user + '> Click this link to go to your page: ' + link);
     }
 
+    /**
+     * Called by the WebServer when a user clicks their link - their channel should be closed
+     * @param user the user that clicked their link
+     */
     async onUserClickedLink(user: CompBotUser) {
         const channel = await this.getUserChannel(user);
         if (channel != null) {
@@ -106,6 +142,10 @@ export default class DiscordClient {
         }
     }
 
+    /**
+     * Retrieve a user's discord channel object, or null if the channel doesn't exist
+     * @param user the user whose channel to return
+     */
     async getUserChannel(user: CompBotUser): Promise<TextChannel | null> {
         if (!(user in this.data.userLinkChannels)) return null;
 

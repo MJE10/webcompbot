@@ -2,6 +2,20 @@ const fs = require("fs");
 // environment variables
 require("dotenv").config();
 
+/**
+ * file: envChecker.ts
+ * author: Michael Elia, michaeljelia@gmail.com
+ * date: 2022/07/20
+ * ---
+ * envChecker exports a single method with no arguments and no return value, though a possible thrown error,
+ * that checks to make sure that all necessary environment variables are set. If this file is not imported,
+ * environment variables may need to be loaded separately.
+ */
+
+/**
+ * Checks to make sure all appropriate environment variables are set.
+ * @throws Error if one or more variables are missing
+ */
 export default function checkEnv() {
     // check that .env file exists
     if (!fs.existsSync(".env")) {
@@ -10,13 +24,13 @@ export default function checkEnv() {
 
     // check that 'competitions' folder exists
     if (!fs.existsSync("competitions")) {
-        // make it
+        // if it doesn't exist, then make it
         fs.mkdirSync("competitions");
     }
 
     // check that competitions/directory.json exists
     if (!fs.existsSync("competitions/directory.json")) {
-        // make it
+        // if it doesn't exist, then make it, with an empty dictionary
         fs.writeFileSync("competitions/directory.json", "{}");
     }
 
