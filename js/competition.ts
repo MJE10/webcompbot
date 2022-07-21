@@ -165,6 +165,7 @@ export default class Competition {
 
     /**
      * Creates a DiscordClient with the appropriate methods bound to methods in the Competition class
+     * @returns {DiscordClient}
      */
     makeDiscordClient(): DiscordClient {
         this.discordClient = new DiscordClient(this.comp.discordData);
@@ -173,9 +174,11 @@ export default class Competition {
     }
 
     /**
-     * Creates a DiscordClient with the appropriate methods bound to methods in the Competition class
+     * Creates a WebServer with the appropriate methods bound to methods in the Competition class
+     * @param discordClient {DiscordClient}
+     * @returns {WebServer}
      */
-    makeWebServer(discordClient: DiscordClient) {
+    makeWebServer(discordClient: DiscordClient): WebServer {
         this.webServer = new WebServer(this, discordClient, this.comp.serverData);
         this.webServer.onDataChanged = this.saveServerData.bind(this);
         this.webServer.onUidGenerated = this.onUidGenerated.bind(this);
@@ -200,7 +203,7 @@ export default class Competition {
 
     /**
      * Called by the WebServer when its data changes so that it can be saved to file
-     * @param serverData the new server data
+     * @param serverData {WebServerData} the new server data
      */
     saveServerData(serverData: WebServerData) {
         this.comp.serverData = serverData;
@@ -209,7 +212,7 @@ export default class Competition {
 
     /**
      * Called by the DiscordClient when its data changes so that it can be saved to file
-     * @param discordData the new discord data
+     * @param discordData {DiscordClientData} the new discord data
      */
     saveDiscordData(discordData: DiscordClientData) {
         this.comp.discordData = discordData;
@@ -218,9 +221,11 @@ export default class Competition {
 
     /**
      * Called by WebServer when the admin wants to load a different competition; opens the file and copies the data
-     * @param id the id of the competition to load
+     * returns whether the operation was successful
+     * @param id {string} the id of the competition to load
+     * @returns {boolean}
      */
-    loadById(id: string) {
+    loadById(id: string): boolean {
         const path = "competitions/comp" + id + ".json"
         if (!fs.existsSync(path)) return false;
         this.comp = JSON.parse(fs.readFileSync(path).toString());
@@ -230,10 +235,11 @@ export default class Competition {
 
     /**
      * Deprecated; Called by WebServer when the admin wants to load a different competition; opens the file and copies the data
-     * @param name the name of the competition to load
+     * @param name {string} the name of the competition to load
+     * @returns {boolean}
      * @deprecated
      */
-    loadByName(name: string) {
+    loadByName(name: string): boolean {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
         let matches = [];
         for (const index in directory) if (directory[index] === name) matches.push(index);
@@ -245,9 +251,10 @@ export default class Competition {
 
     /**
      * Sets the name of the current competition
-     * @param x the new competition name
+     * Returns whether the operation was successful
+     * @param x {string} the new competition name
      */
-    setName(x: string) {
+    setName(x: string): boolean {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
         for (const index in directory) if (directory[index] === x) return false;
         directory[this.comp.competitionId] = x;
@@ -259,7 +266,7 @@ export default class Competition {
 
     /**
      * Sets the number of solves needed to complete an 'average'; usually 5
-     * @param x the number of solves needed to complete an 'average'
+     * @param x {number} the number of solves needed to complete an 'average'
      */
     setSolvesPerAverage(x: number) {
         if (x > 0) this.comp.solvesPerAverage = x;
@@ -268,10 +275,10 @@ export default class Competition {
 
     /**
      * Called by the WebServer after it has generated a Uuid for a new person; adds the new person to the saved data
-     * @param uid the new uuid
-     * @param user the user for whom the uuid was created
-     * @param displayName the display name for the new user
-     * @param username the username for the new user
+     * @param uid {CompBotUuid} the new uuid
+     * @param user {CompBotUser} the user for whom the uuid was created
+     * @param displayName {string} the display name for the new user
+     * @param username {string} the username for the new user
      */
     onUidGenerated(uid: CompBotUuid, user: CompBotUser, displayName: string, username: string) {
         this.comp.people[uid] = {
@@ -683,8 +690,8 @@ export default class Competition {
     /**
      * Called by the WebServer when a user makes a choice; Considers the state of the Competition and the status of
      * the user, and takes appropriate action
-     * @param uid the user
-     * @param value the choice the user made
+     * @param uid {CompBotUuid} the user
+     * @param value {{value: string}} the choice the user made
      */
     click(uid: CompBotUuid, value: {value: string}) {
         let person = this.comp.people[uid];
@@ -898,23 +905,24 @@ export default class Competition {
 
     /**
      * Returns the UI prompt for the given user
-     * @param uid the user
+     * @param uid {CompBotUuid} the user
      */
-    getActionForUID(uid: CompBotUuid) {
+    getActionForUID(uid: CompBotUuid): any {
         return this.comp.people[uid].action;
     }
 
     /**
      * Returns all the data associated with the Competition; usually only visible to admins since it contains
      * scrambles
+     * @returns {CompetitionData}
      */
-    getGameUpdate() {
+    getGameUpdate(): CompetitionData {
         return this.comp;
     }
 
     /**
      * Creates a new, blank competition with the given name
-     * @param name the name of the new competition
+     * @param name {string} the name of the new competition
      */
     newComp(name: string) {
         const directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
@@ -979,8 +987,8 @@ export default class Competition {
     /**
      * Called by the WebServer when an admin forcefully chooses someone's type; can only be done if the user has
      * voluntarily selected 'organizer chosen' or if they have not chosen anything and 'organizer chosen' is an option
-     * @param uid the user whose type to change
-     * @param type the type to assign to the user
+     * @param uid {CompBotUuid} the user whose type to change
+     * @param type {CompBotType} the type to assign to the user
      */
     choosePersonType(uid: CompBotUuid, type: CompBotType) {
         const person = this.comp.people[uid];
@@ -991,8 +999,8 @@ export default class Competition {
 
     /**
      * Assigns a type to a person and gives them their initial status - generally private behavior
-     * @param uid the user whose type to change
-     * @param type the type to assign to the user
+     * @param uid {CompBotUuid} the user whose type to change
+     * @param type {CompBotType} the type to assign to the user
      */
     choosePersonTypeHelper(uid: CompBotUuid, type: CompBotType) {
         this.comp.people[uid].type = type;
@@ -1012,8 +1020,8 @@ export default class Competition {
      * Called when an admin wishes to forcibly assign a cup to a competitor; assumes the event is 3x3
      *
      * deprecated; instead, use choosePersonCupHelper and also specify the event
-     * @param uid the competitor to whom we should assign the cup
-     * @param cup the cup to assign to the competitor
+     * @param uid {CompBotUuid} the competitor to whom we should assign the cup
+     * @param cup {CupId} the cup to assign to the competitor
      * @deprecated
      */
     choosePersonCup(uid: CompBotUuid, cup: CupId) {
@@ -1022,9 +1030,9 @@ export default class Competition {
 
     /**
      * Assigns a cup to a competitor and creates a 'Solve' with the specified event
-     * @param uid the competitor who needs a cup and a solve
-     * @param cup the id of the cup to use
-     * @param event the event that the competitor will compete in
+     * @param uid {CompBotUuid} the competitor who needs a cup and a solve
+     * @param cup {CupId} the id of the cup to use
+     * @param event {CompBotEvent} the event that the competitor will compete in
      */
     choosePersonCupHelper(uid: CompBotUuid, cup: CupId | null, event: CompBotEvent) {
         let person = this.comp.people[uid];
@@ -1052,8 +1060,8 @@ export default class Competition {
 
     /**
      * Changes the display name of the given user
-     * @param uid the user whose display name to change
-     * @param name the name to assign to the user
+     * @param uid {CompBotUuid} the user whose display name to change
+     * @param name {string} the name to assign to the user
      */
     personChangeDisplayName(uid: CompBotUuid, name: string) {
         this.comp.people[uid].displayName = name;
@@ -1063,7 +1071,7 @@ export default class Competition {
 
     /**
      * Forcefully terminate a user from the competition and clean up the results
-     * @param uid the user to remove
+     * @param uid {CompBotUuid} the user to remove
      */
     personDie(uid: CompBotUuid) {
         console.log(uid);
@@ -1121,7 +1129,7 @@ export default class Competition {
 
     /**
      * Create a new cup with the specified name and a unique id
-     * @param name the name of the new cup
+     * @param name {string} the name of the new cup
      */
     newCup(name: string) {
         let maxCupId = 0;
@@ -1136,8 +1144,9 @@ export default class Competition {
 
     /**
      * Returns all the completed solves
+     * @returns {{[key: string]: Solve}} the results
      */
-    getAllResults() {
+    getAllResults(): {[key: string]: Solve} {
         let results: {[key: string]: Solve} = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status === "complete") {
             results[solveId] = this.comp.solves[solveId];
@@ -1147,9 +1156,10 @@ export default class Competition {
 
     /**
      * Returns the results for a given solve id if that solve is completed
-     * @param id the solve whose results to return
+     * @param id {SolveId} the solve whose results to return
+     * @returns {Solve | {}}
      */
-    getSolveResults(id: SolveId) {
+    getSolveResults(id: SolveId): Solve | {} {
         if (this.comp.solves[id] && this.comp.solves[id].status === "complete") return this.comp.solves[id];
         else return {};
     }
@@ -1157,9 +1167,10 @@ export default class Competition {
     /**
      * Returns the results for every solve for a specified competitor; competitors' ids change between averages, so this
      * will only return one average. If the average is not complete, it will only return whichever solves are complete.
-     * @param id the id of the competitor whose average to retrieve
+     * @param id {CompBotUuid} the id of the competitor whose average to retrieve
+     * @returns {{ [key:string]: Solve }}
      */
-    getAverageResults(id: CompBotUuid) {
+    getAverageResults(id: CompBotUuid): { [key:string]: Solve } {
         let average: { [key:string]: Solve } = {};
         for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status === "complete") {
             if (this.comp.solves[solveId].competitor === id) {
@@ -1171,7 +1182,8 @@ export default class Competition {
 
     /**
      * Get all solve results for the specified Discord user
-     * @param id the discord ID of the user
+     * @param id {string} the discord ID of the user
+     * @returns { [key:string]: Solve }
      */
     getUserResults(id: CompBotUuid) {
         let solves: { [key:string]: Solve } = {};
@@ -1185,8 +1197,23 @@ export default class Competition {
 
     /**
      * Calculate the official average results for a user
-     * @param uid the user whose average to calculate
-     * @param event the event whose average to calculate
+     * @param uid {CompBotUuid} the user whose average to calculate
+     * @param event {CompBotEvent} the event whose average to calculate
+     * @returns {{
+     *             mean: string,
+     *             average: string,
+     *             solves: { [key: number]: {
+     *                     id: SolveId,
+     *                     result: number,
+     *                     penalty: PENALTY,
+     *                     displayText: string,
+     *                     competitor: CompBotUuid,
+     *                 } },
+     *         } = {
+     *             mean: '0',
+     *             average: '0',
+     *             solves: {},
+     *         }}
      */
     getPersonAverage(uid: CompBotUuid, event: CompBotEvent) {
         let sum = 0;
@@ -1268,8 +1295,8 @@ export default class Competition {
 
     /**
      * Forcefully change the result of a solve (in case it was entered incorrectly)
-     * @param id the id of the solve to change
-     * @param result the result to change to
+     * @param id {SolveId} the id of the solve to change
+     * @param result {number} the result to change to
      */
     changeSolveResult(id: SolveId, result: number) {
         this.comp.solves[id].result = result;
@@ -1277,8 +1304,8 @@ export default class Competition {
 
     /**
      * Forcefully change the penalty of a solve (in case it was entered incorrectly)
-     * @param id the id of the solve to change
-     * @param penalty the penalty to change to
+     * @param id {SolveId} the id of the solve to change
+     * @param penalty {PENALTY} the penalty to change to
      */
     changeSolvePenalty(id: SolveId, penalty: string) {
         if (penalty === 'none' || penalty === '+2' || penalty === 'dnf') this.comp.solves[id].penalty = penalty;
