@@ -1,3 +1,11 @@
+/**
+ * file: server.ts
+ * author: Michael Elia, michaeljelia@gmail.com
+ * date: 2022/07/20
+ * ---
+ * server.ts handles all interactions between web clients (both admin and regular) and the Competition
+ */
+
 import Competition from "./competition";
 import DiscordClient from "./discordClient";
 
@@ -13,14 +21,6 @@ import {
     CompBotEvent,
     CompBotType
 } from "./definitions";
-
-/**
- * file: server.ts
- * author: Michael Elia, michaeljelia@gmail.com
- * date: 2022/07/20
- * ---
- * server.ts handles all interactions between web clients (both admin and regular) and the Competition
- */
 
 /**
  * Holds information about the current state of the WebServer

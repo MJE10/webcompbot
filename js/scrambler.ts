@@ -1,6 +1,3 @@
-import {CompBotEvent} from "./definitions";
-const { execSync } = require("child_process");
-
 /**
  * file: scrambler.ts
  * author: Michael Elia, michaeljelia@gmail.com
@@ -9,6 +6,9 @@ const { execSync } = require("child_process");
  * scrambler exports a single function which takes an event and creates a scramble and an image for that event
  * using the official tnoodle scrambler. It returns the scramble and saves the image to the public 'images' folder.
  */
+
+import {CompBotEvent} from "./definitions";
+const { execSync } = require("child_process");
 
 /**
  * Takes an event and creates a scramble and an image for that event using the official tnoodle scrambler.

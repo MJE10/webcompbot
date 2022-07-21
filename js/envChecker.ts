@@ -1,7 +1,3 @@
-const fs = require("fs");
-// environment variables
-require("dotenv").config();
-
 /**
  * file: envChecker.ts
  * author: Michael Elia, michaeljelia@gmail.com
@@ -16,6 +12,11 @@ require("dotenv").config();
  * Checks to make sure all appropriate environment variables are set.
  * @throws Error if one or more variables are missing
  */
+
+const fs = require("fs");
+// environment variables
+require("dotenv").config();
+
 export default function checkEnv() {
     // check that .env file exists
     if (!fs.existsSync(".env")) {

@@ -1,11 +1,3 @@
-import fs from 'fs';
-import DiscordClient, {DiscordClientData} from "./discordClient";
-import WebServer from "./server";
-import generateScramble from "./scrambler";
-import {CompBotUser, CompBotUuid, CompBotEvent, CompBotType} from "./definitions";
-import {WebServerData} from "./server";
-import {Typing} from "discord.js";
-
 /**
  * file: competition.ts
  * author: Michael Elia, michaeljelia@gmail.com
@@ -13,6 +5,13 @@ import {Typing} from "discord.js";
  * ---
  * Handles data and methods directly related to competing with a Rubik's Cube
  */
+
+import fs from 'fs';
+import DiscordClient, {DiscordClientData} from "./discordClient";
+import WebServer from "./server";
+import generateScramble from "./scrambler";
+import {CompBotUser, CompBotUuid, CompBotEvent, CompBotType} from "./definitions";
+import {WebServerData} from "./server";
 
 // statuses that any person could have, regardless of their type
 type STATUS_PERSON_COMMON = "dead";

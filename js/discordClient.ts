@@ -1,4 +1,13 @@
 // noinspection JSCheckFunctionSignatures
+
+/**
+ * file: discordClient.ts
+ * author: Michael Elia, michaeljelia@gmail.com
+ * date: 2022/07/20
+ * ---
+ * Handles all interactions between the Competition and the Discord bot/server
+ */
+
 import {
     Client,
     TextChannel,
@@ -8,14 +17,6 @@ import {
 import {CompBotUser, UserLinkChannels} from "./definitions";
 
 require('dotenv').config();
-
-/**
- * file: discordClient.ts
- * author: Michael Elia, michaeljelia@gmail.com
- * date: 2022/07/20
- * ---
- * Handles all interactions between the Competition and the Discord bot/server
- */
 
 export interface DiscordClientData {
     // UserLinkChannels relates CompBotUsers to corresponding discord channel snowflakes
