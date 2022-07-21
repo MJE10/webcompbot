@@ -13,7 +13,7 @@ const { execSync } = require("child_process");
 /**
  * Takes an event and creates a scramble and an image for that event using the official tnoodle scrambler.
  * It returns the scramble and saves the image to the public 'images' folder.
- * @param type the event to scramble for, see definitions.ts
+ * @param type {CompBotEvent} the event to scramble for, see definitions.ts
  */
 export default function generateScramble(type:CompBotEvent) {
     // apple cube uses a 3x3 scramble

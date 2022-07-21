@@ -56,8 +56,8 @@ export default class DiscordClient {
     /**
      * Initializes DiscordClient
      * @constructor
-     * @param dataInput If this game was loaded uses a .json file from a previous game, then this object's userLinkChannels
-     * field describes the relationship between users and their corresponding Discord channels
+     * @param dataInput {DiscordClientData} If this game was loaded uses a .json file from a previous game, then this
+     * object's userLinkChannels field describes the relationship between users and their corresponding Discord channels
      */
     constructor(dataInput: DiscordClientData) {
 
@@ -107,8 +107,8 @@ export default class DiscordClient {
 
     /**
      * Sends the web invite link to the user using a private Discord channel
-     * @param user the user to whom we should send the link
-     * @param link the link to the online site
+     * @param user {CompBotUser} the user to whom we should send the link
+     * @param link {string} the link to the online site
      */
     async onUserLinkGenerated(user: CompBotUser, link: string) {
         let discordUser = await this.client.users.fetch(user);
@@ -131,7 +131,7 @@ export default class DiscordClient {
 
     /**
      * Called by the WebServer when a user clicks their link - their channel should be closed
-     * @param user the user that clicked their link
+     * @param user {CompBotUser} the user that clicked their link
      */
     async onUserClickedLink(user: CompBotUser) {
         const channel = await this.getUserChannel(user);
@@ -144,7 +144,8 @@ export default class DiscordClient {
 
     /**
      * Retrieve a user's discord channel object, or null if the channel doesn't exist
-     * @param user the user whose channel to return
+     * @param user {CompBotUser} the user whose channel to return
+     * @returns {Promise<TextChannel | null>}
      */
     async getUserChannel(user: CompBotUser): Promise<TextChannel | null> {
         if (!(user in this.data.userLinkChannels)) return null;
@@ -158,6 +159,11 @@ export default class DiscordClient {
         return null;
     }
 
+    /**
+     * Returns whether a given client is an administrator
+     * @param id {Snowflake} the snowflake of the user in question
+     * @returns {boolean}
+     */
     isAdmin(id: Snowflake): boolean {
         return id === this.constants.USER_MJE10;
     }
