@@ -2,6 +2,8 @@ import {Snowflake} from "discord.js";
 
 export type CompBotEvent = "three" | "four" | "apple" | "two" | "pyra"
 
+export type CompBotType = 'scramble' | 'run' | 'judge' | 'compete' | 'self_serve' | 'NEW' | 'organizer_chosen'
+
 export type CompBotUser = Snowflake | string
 
 export type CompBotToken = string

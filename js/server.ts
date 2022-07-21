@@ -5,7 +5,14 @@ import express = require('express');
 import { v4 as uuid_v4 } from 'uuid';
 
 import { Server as WssServer, WebSocket } from 'ws';
-import {CompBotWebSocketMessage, CompBotUuid, CompBotUser, CompBotToken} from "./definitions";
+import {
+    CompBotWebSocketMessage,
+    CompBotUuid,
+    CompBotUser,
+    CompBotToken,
+    CompBotEvent,
+    CompBotType
+} from "./definitions";
 
 /**
  * file: server.ts
@@ -93,11 +100,14 @@ export default class WebServer {
         });
 
         app.get('/solveResults', (req: express.Request, res: express.Response) => {
-            res.send(JSON.stringify(this.competition.getSolveResults(req.url.split('?s=')[1])));
+            res.send(JSON.stringify(this.competition.getSolveResults(parseInt(req.url.split('?s=')[1]))));
         });
 
         app.get('/avgResults', (req: express.Request, res: express.Response) => {
-            res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1].split('&e=')[0],req.url.split('?p=')[1].split('&e=')[1])));
+            const ev = req.url.split('?p=')[1].split('&e=')[1];
+            if (['scramble', 'run', 'judge', 'compete', 'self_serve'].includes(ev)) {
+                res.send(JSON.stringify(this.competition.getPersonAverage(req.url.split('?p=')[1].split('&e=')[0], ev as CompBotEvent)));
+            }
         });
 
         app.get('/userResults', (req: express.Request, res: express.Response) => {
@@ -221,23 +231,25 @@ export default class WebServer {
                         }
                         if (data.eType === 'solveChangeResult') {
                             if (isAdmin) {
-                                this.competition.changeSolveResult(data.id, data.result);
+                                this.competition.changeSolveResult(parseInt(data.id), parseFloat(data.result));
                             }
                         }
                         if (data.eType === 'solveChangePenalty') {
                             if (isAdmin) {
-                                this.competition.changeSolvePenalty(data.id, data.penalty);
+                                this.competition.changeSolvePenalty(parseInt(data.id), data.penalty);
                             }
                         }
                         if (data.eType === 'choosePersonType') {
                             if (isAdmin) {
-                                this.competition.choosePersonType(data.id, data.type);
+                                if (['scramble', 'run', 'judge', 'compete', 'self_serve'].includes(data.type)) {
+                                    this.competition.choosePersonType(data.id, data.type as CompBotType);
+                                }
                             }
                         }
                         if (data.eType === 'choosePersonCup') {
                             if (isAdmin) {
                                 // deprecated
-                                this.competition.choosePersonCup(data.id, data.cup);
+                                this.competition.choosePersonCup(data.id, parseInt(data.cup));
                             }
                         }
                         if (data.eType === 'regenerateActions') {
