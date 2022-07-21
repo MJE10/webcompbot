@@ -15,6 +15,8 @@ A physical web server or other computer, with a public URL
 
 [Tnoodle CLI](https://github.com/SpeedcuberOSS/tnoodle-cli)
 
+[A Discord Bot](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot)
+
 ---
 
 ## Installation
