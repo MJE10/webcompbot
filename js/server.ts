@@ -301,8 +301,8 @@ export default class WebServer {
     /**
      * given a list of Discord snowflakes that want to generate a new page, calls its callback with urls to their
      * invite pages
-     * @param users the users that want to generate a new link
-     * @param callback a function that accepts a user and a link
+     * @param users {CompBotUser[]} the users that want to generate a new link
+     * @param callback {(user: CompBotUser, link: string) => void} a function that accepts a user and a link
      */
     onNewUsers(users: CompBotUser[], callback: (user: CompBotUser, link: string) => void) {
         for (const userIndex in users) {
@@ -343,7 +343,7 @@ export default class WebServer {
 
     /**
      * Resets the WebServer object with the given data
-     * @param data the data to reset the object with
+     * @param data {WebServerData} the data to reset the object with
      */
     async resetWith(data: WebServerData) {
         this.data = data;
