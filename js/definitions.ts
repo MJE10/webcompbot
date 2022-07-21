@@ -19,8 +19,7 @@ export type CompBotWebSocketMessageEventType =
 
 type MessageBase = {
     uid: string,
-    token: string,
-    eType: CompBotWebSocketMessageEventType,
+    token: string
 }
 
 type SimpleMessage = MessageBase & {
