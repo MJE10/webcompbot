@@ -7,6 +7,17 @@ import { v4 as uuid_v4 } from 'uuid';
 import { Server as WssServer, WebSocket } from 'ws';
 import {CompBotWebSocketMessage, CompBotUuid, CompBotUser, CompBotToken} from "./definitions";
 
+/**
+ * file: server.ts
+ * author: Michael Elia, michaeljelia@gmail.com
+ * date: 2022/07/20
+ * ---
+ * server.ts handles all interactions between web clients (both admin and regular) and the Competition
+ */
+
+/**
+ * Holds information about the current state of the WebServer
+ */
 export interface WebServerData {
     url: string
     port: string
@@ -19,10 +30,15 @@ export interface WebServerData {
     }
 }
 
+/**
+ * handles all interactions between web clients (both admin and regular) and the Competition
+ */
 export default class WebServer {
 
     data: WebServerData;
 
+    // named lists for control/admin connections, regular action connections, and 'other' which keeps track of the
+    // current connection count for each Uuid
     sockets: {
         'control': Array<WebSocket>,
         'action': Array<{socket: WebSocket, uid: CompBotUuid}>
@@ -32,11 +48,23 @@ export default class WebServer {
     competition: Competition;
     discordClient: DiscordClient;
 
+    // called by the WebServer to let DiscordClient know about new invite links so that DiscordClient can send
+    // the links to the appropriate users
     onUserLinkGenerated: (user: CompBotUser, link: string) => void = () => {};
+    // called by the WebServer to let DiscordClient know that a link/channel can be deleted
     onUserClickedLink: (user: CompBotUser) => void = () => {};
+    // called by the WebServer to let Competition know that its save data has changed, so that Competition
+    // can write the new data to the json file
     onDataChanged: (data: WebServerData) => void = () => {};
+    // called by the WebServer to let Competition know about new Uuids so that it can create saved profiles
     onUidGenerated: (uid: CompBotUuid, user: CompBotUser, displayName: string, tag: string) => void = () => {};
 
+    /**
+     * Creates a new WebServer
+     * @param competition {Competition} the global Competition object
+     * @param discordClient {DiscordClient} the global DiscordClient object
+     * @param dataInput {WebServerData} saved data about its current state
+     */
     constructor(competition: Competition, discordClient: DiscordClient, dataInput: WebServerData) {
 
         this.data = dataInput;
@@ -47,6 +75,7 @@ export default class WebServer {
         this.competition = competition;
         this.discordClient = discordClient;
 
+        // host files in the public folder
         app.use(express.static('public'));
 
         app.get('/joinGame', (req: express.Request, res: express.Response) => {
@@ -79,8 +108,9 @@ export default class WebServer {
             res.send(JSON.stringify(this.competition.comp.people));
         });
 
+        // basic web server for static files
         const server = app.listen(this.data.port, () => { console.log(`Example app listening at ${this.data.url}, port ${this.data.port}`) });
-
+        // websocket server for intercommunication
         const wss = new WssServer({server: server});
 
         wss.on('connection', function connection(this: WebServer, ws: WebSocket) {
@@ -255,9 +285,13 @@ export default class WebServer {
         }.bind(this));
     }
 
+    /**
+     * given a list of Discord snowflakes that want to generate a new page, calls its callback with urls to their
+     * invite pages
+     * @param users the users that want to generate a new link
+     * @param callback a function that accepts a user and a link
+     */
     onNewUsers(users: CompBotUser[], callback: (user: CompBotUser, link: string) => void) {
-        // the function is given a list of Discord snowflakes that want to generate a new page
-        // for each of them
         for (const userIndex in users) {
             const user = users[userIndex];
             // generate a token linked to their discord
@@ -277,6 +311,9 @@ export default class WebServer {
         }
     }
 
+    /**
+     * Sends a message to all active sockets with updated game info
+     */
     updateAllSockets() {
         for (const controlSocketIndex in this.sockets['control']) {
             this.sockets['control'][controlSocketIndex].send(JSON.stringify({uid:null,
@@ -291,6 +328,10 @@ export default class WebServer {
         }
     }
 
+    /**
+     * Resets the WebServer object with the given data
+     * @param data the data to reset the object with
+     */
     async resetWith(data: WebServerData) {
         this.data = data;
         for (const controlSocketIndex in this.sockets['control']) {
@@ -302,6 +343,9 @@ export default class WebServer {
         this.sockets = {'control': [],'action': [], 'other': {}};
     }
 
+    /**
+     * Remove any dead sockets, count the number of remaining sockets
+     */
     cleanSocketList() {
         this.data.socketCount = {'control':0, 'other': {}};
         for (const controlSocketIndex in this.sockets['control']) {
