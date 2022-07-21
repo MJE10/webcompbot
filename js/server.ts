@@ -236,6 +236,7 @@ export default class WebServer {
                         }
                         if (data.eType === 'choosePersonCup') {
                             if (isAdmin) {
+                                // deprecated
                                 this.competition.choosePersonCup(data.id, data.cup);
                             }
                         }
