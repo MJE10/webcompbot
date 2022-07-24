@@ -20,19 +20,34 @@ require("dotenv").config();
 export default function checkEnv() {
     // check that .env file exists
     if (!fs.existsSync(".env")) {
-        throw new Error("No .env file found!");
+        console.error("No .env file found. Please create a file with the name .env in the root directory.");
+        throw new Error("missing file: .env");
     }
 
     // check that 'competitions' folder exists
     if (!fs.existsSync("competitions")) {
         // if it doesn't exist, then make it
-        fs.mkdirSync("competitions");
+        console.log("creating competitions folder...");
+        try {
+            fs.mkdirSync("competitions");
+        } catch (e) {
+            console.error(e);
+            console.error("Error creating competitions folder.");
+            throw new Error("cannot create competitions folder");
+        }
     }
 
     // check that competitions/directory.json exists
     if (!fs.existsSync("competitions/directory.json")) {
         // if it doesn't exist, then make it, with an empty dictionary
-        fs.writeFileSync("competitions/directory.json", "{}");
+        console.log("creating directory.json...");
+        try {
+            fs.writeFileSync("competitions/directory.json", "{}");
+        } catch (e) {
+            console.error(e);
+            console.error("Error creating directory.json");
+            throw new Error("cannot create directory.json");
+        }
     }
 
     // check that all required variables are set
@@ -46,6 +61,6 @@ export default function checkEnv() {
     for (const variable of requiredVariables) {
         if (!process.env[variable]) {
             throw new Error(`${variable} not set in .env file!`);
-        }
+        } else console.log(`Environment variable ${variable} found.`);
     }
 }

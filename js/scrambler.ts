@@ -22,11 +22,25 @@ export default function generateScramble(type:CompBotEvent) {
     const tnoodlePath: string = process.env.TNOODLE_PATH || "tnoodle";
     const imagesPath = "./public/images/";
 
-    // generate scramble
-    const scramble = execSync(tnoodlePath + " scramble -p " + type).toString().trim();
+    let scramble = "";
 
-    // generate image
-    execSync(`${tnoodlePath} draw -o "${imagesPath}${scramble}.png" -p ${type} -s "${scramble}"`);
+    try {
+        // generate scramble
+        scramble = execSync(tnoodlePath + " scramble -p " + type).toString().trim();
+    } catch (e) {
+        console.error(e);
+        console.error(`Error generating scramble for ${type}`);
+        throw new Error("scramble error");
+    }
+
+    try {
+        // generate image
+        execSync(`${tnoodlePath} draw -o "${imagesPath}${scramble}.png" -p ${type} -s "${scramble}"`);
+    } catch (e) {
+        console.error(e);
+        console.error(`Error generating scramble image for ${type} for ${scramble}`);
+        throw new Error("scramble image error");
+    }
 
     return scramble;
 }

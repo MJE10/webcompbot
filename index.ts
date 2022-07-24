@@ -14,8 +14,12 @@
  * comments for details on the purpose and implementation for each object.
  */
 
+console.log("[index.ts] Checking environment variables and folder structures...");
+
 import checkEnv from "./js/envChecker";
 checkEnv();
+
+console.log("[index.ts] Finished checking environment variables and folder structures. Creating objects...");
 
 import Competition from "./js/competition";
 
@@ -26,3 +30,5 @@ const webServer = competition.makeWebServer(discordClient);
 discordClient.onUsersReact = webServer.onNewUsers.bind(webServer);
 webServer.onUserLinkGenerated = discordClient.onUserLinkGenerated.bind(discordClient);
 webServer.onUserClickedLink = discordClient.onUserClickedLink.bind(discordClient);
+
+console.log("[index.ts] Objects created. index.js complete.");
