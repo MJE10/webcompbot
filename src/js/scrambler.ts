@@ -20,7 +20,7 @@ export default function generateScramble(type:CompBotEvent) {
     if (type === "apple") type = "three";
 
     const tnoodlePath: string = process.env.TNOODLE_PATH || "tnoodle";
-    const imagesPath = "./public/images/";
+    const imagesPath = "./src/public/images/";
 
     let scramble = "";
 
