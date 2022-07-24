@@ -13,7 +13,7 @@
 
 <h1 class="text">Average</h1>
 
-<a href="../"><button><h1>Leaderboard</h1></button></a>
+<a href=".."><button><h1>Leaderboard</h1></button></a>
 
 </body>
 <script>
@@ -28,15 +28,15 @@
 
         const body = $('body');
 
-        body.append('<p class="text"><a href="../name?n='
-            + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName+ '">'
+        body.append('<p class="text"><a href='
+            + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName+ '"../name?n=">'
             + people[average.solves[Object.keys(average.solves)[0]].competitor].displayName + '</a></p>');
         body.append('<p class="text">Event: ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[new URLSearchParams(window.location.search).get('e')] + '</p>');
         body.append('<p class="text">Average: ' + average.average + '</p>');
         body.append('<p class="text">Mean: ' + average.mean + '</p>');
 
         for (const solveId in average.solves)
-            body.append('<a href="../solve?s=' + solveId + '"><p class="text">' + average.solves[solveId].displayText + '</p></a>');
+            body.append('<a href=' + solveId + '"../solve?s="><p class="text">' + average.solves[solveId].displayText + '</p></a>');
     }
 
     $(document).ready(main);

@@ -1,11 +1,11 @@
 # Project exclude paths
 /node_modules/
 /.idea/
-/competitions/
-/public/images/
+/src/competitions/
+/src/public/images/
 .env
-/competitions/directory.json
-/tnoodle/
+/src/competitions/directory.json
+/src/tnoodle/
 /dist/
 index.js
 /js/*.js

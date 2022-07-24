@@ -13,7 +13,7 @@
 
 <h1 class="text">Solve</h1>
 
-<a href="../"><button><h1>Leaderboard</h1></button></a>
+<a href=".."><button><h1>Leaderboard</h1></button></a>
 
 </body>
 <script>
@@ -28,8 +28,8 @@
 
         const body = $('body');
 
-        body.append('<a href="../average?a=' + result.competitor + '&e='+ result.event +'"><button><h1>Show Average</h1></button></a>');
-        body.append('<p class="text"><a href="../name?n=' + people[result.competitor].displayName + '">' + people[result.competitor].displayName + '</a></p>');
+        body.append('' + result.competitor + '<a href="../average?a=&e="><button><h1>Show Average</h1></button></a>'+ result.event +'');
+        body.append('<p class="text"><a href=' + people[result.competitor].displayName + '"../name?n=">' + people[result.competitor].displayName + '</a></p>');
         body.append('<p class="text">Event: ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[result.event] + '</p>');
         body.append('<p class="text">' + result.scramble + '</p>');
         body.append('<p class="text">Result: ' + result.result + '</p>');

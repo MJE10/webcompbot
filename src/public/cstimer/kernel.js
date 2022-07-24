@@ -372,7 +372,7 @@ var kernel = execMain(function() {
 				return;
 			} else if (value[1] == 'h') {
 				if (confirm('Press OK to redirect to crowdin for translating cstimer')) {
-					window.location.href = 'https://crowdin.com/project/cstimer';
+					window.location.href = '';
 				}
 			} else {
 				window.location.href = '?lang=' + value[1];

@@ -39,8 +39,8 @@
         $(".text").remove();
         $("button").remove();
         body.append('<h1 class="text">Leaderboard: ' +{"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[event]+ '</h1>\n' +
-            '<a class="text" href="../"><button><h1>Home</h1></button></a>');
-        body.append('<div class="text">Pos #) Name (<a href="../results">Avg</a>/<a href="../results?s=1">Single</a>)</div>')
+            '<a class="text" href=".."><button><h1>Home</h1></button></a>');
+        body.append('<div class="text">Pos #) Name (<a href="">Avg</a>/<a href="?s=1">Single</a>)</div>')
         for (const singleId in singles) body.append(singles[singleId]);
 
         setTimeout(main2, 500);
@@ -114,9 +114,9 @@
         let html = [];
         for (const i in results) {
             html.push('<p class="text">'
-                + (parseInt(i)+1) + ') <a href="name?n=' + people[results[i].competitor].displayName + '">' + people[results[i].competitor].displayName + '</a> '
-                + '(<a href="average?a=' + results[i].competitor + '">' + averages[results[i].competitor] + '</a> / '
-                + '<a href="solve?s=' + results[i].id + '">' + results[i].result + ')</a></p>')
+                + (parseInt(i)+1) + ') <a href=' + people[results[i].competitor].displayName + '"name?n=">' + people[results[i].competitor].displayName + '</a> '
+                + '(<a href=' + results[i].competitor + '"average?a=">' + averages[results[i].competitor] + '</a> / '
+                + '<a href=' + results[i].id + '"solve?s=">' + results[i].result + ')</a></p>')
         }
         return html;
     }

@@ -13,7 +13,7 @@
 
 <h1 class="text">Averages</h1>
 
-<a href="../"><button><h1>Leaderboard</h1></button></a>
+<a href=".."><button><h1>Leaderboard</h1></button></a>
 
 </body>
 <script>
@@ -38,7 +38,7 @@
                 if (!(results[solveId].competitor + "///event=" + results[solveId].event in competitors)) {
                     competitors[results[solveId].competitor + "///event=" + results[solveId].event] = true;
                     let average = (await (await fetch('/avgResults?p='+ results[solveId].competitor + "&e=" + results[solveId].event)).json()).average;
-                    body.append('<a href="../average?a=' + results[solveId].competitor + '&e='+results[solveId].event+'"><p class="text">' + average + ': ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[results[solveId].event] + '</p></a>');
+                    body.append('' + results[solveId].competitor + '<a href="../average?a=&e="><p class="text">'+results[solveId].event+'' + average + ': ' + {"three":"3x3","two":"2x2","four":"4x4","pyra":"pyraminx","apple":"apple"}[results[solveId].event] + '</p></a>');
                 }
             }
         }
