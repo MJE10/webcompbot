@@ -61,6 +61,6 @@ export default function checkEnv() {
     for (const variable of requiredVariables) {
         if (!process.env[variable]) {
             throw new Error(`${variable} not set in .env file!`);
-        } else console.log(`Environment variable ${variable} found.`);
+        } else console.log(`[envChecker.ts] Environment variable ${variable} found.`);
     }
 }

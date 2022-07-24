@@ -80,7 +80,7 @@ export default class DiscordClient {
         this.client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 
         this.client.once('ready', async () => {
-            console.log('Ready!');
+            console.log('[discordClient.ts] Discord bot ready!');
             const channel = await this.client.channels.fetch(this.constants.CHANNEL_HOME);
             if (channel) {
                 await (channel as TextChannel).messages.fetch(this.constants.MESSAGE_HOME);
@@ -156,7 +156,7 @@ export default class DiscordClient {
         if (channel instanceof TextChannel)
             return channel;
 
-        console.error(`Channel ${this.data.userLinkChannels[user]} is not a text channel`);
+        console.error(`[discordClient.ts] Channel ${this.data.userLinkChannels[user]} is not a text channel`);
         return null;
     }
 

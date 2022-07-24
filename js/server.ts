@@ -118,12 +118,12 @@ export default class WebServer {
             res.send(JSON.stringify(this.competition.comp.people));
         });
 
-        console.log("creating servers...");
+        console.log("[server.ts] creating servers...");
         // basic web server for static files
-        const server = app.listen(this.data.port, () => { console.log(`Example app listening at ${this.data.url}, port ${this.data.port}`) });
+        const server = app.listen(this.data.port, () => { console.log(`[server.ts] Example app listening at ${this.data.url}, port ${this.data.port}`) });
         // websocket server for intercommunication
         const wss = new WssServer({server: server});
-        console.log("finished creating servers.");
+        console.log("[server.ts] finished creating servers.");
 
         wss.on('connection', function connection(this: WebServer, ws: WebSocket) {
             // console.log('Connected!');
@@ -289,7 +289,7 @@ export default class WebServer {
                         this.updateAllSockets();
                     } else ws.send(JSON.stringify({message: "Token expired, please try again.<br><br><button onclick='window.location.href=\"/\"'><h1>Home</h1></button>"}));
                 } catch (e) {
-                    console.error('error: '+e);
+                    console.error('[server.ts] error: '+e);
                     throw e;
                 }
             }.bind(this));
@@ -335,7 +335,7 @@ export default class WebServer {
                 this.sockets['control'][controlSocketIndex].send(JSON.stringify({uid:null,
                     eType:"update",gameUpdate: this.competition.getGameUpdate()}));
             } catch (e) {
-                console.error("error sending message to control socket");
+                console.error("[server.ts] error sending message to control socket");
             }
         }
         for (const socketIndex in this.sockets['action']) {
@@ -346,7 +346,7 @@ export default class WebServer {
                     action: this.competition.getActionForUID(this.sockets['action'][socketIndex]['uid'])
                 }));
             } catch (e) {
-                console.error("error sending message to action socket");
+                console.error("[server.ts] error sending message to action socket");
             }
         }
     }
@@ -361,14 +361,14 @@ export default class WebServer {
             try {
                 this.sockets['control'][controlSocketIndex].close();
             } catch (e) {
-                console.error("error closing control socket");
+                console.error("[server.ts] error closing control socket");
             }
         }
         for (const socketIndex in this.sockets['action']) {
             try {
                 this.sockets['action'][socketIndex]['socket'].close();
             } catch (e) {
-                console.error("error closing control socket");
+                console.error("[server.ts] error closing control socket");
             }
         }
         this.sockets = {'control': [],'action': [], 'other': {}};
