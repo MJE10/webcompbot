@@ -81,9 +81,14 @@ export default class DiscordClient {
 
         this.client.once('ready', async () => {
             console.log('[discordClient.ts] Discord bot ready!');
-            const channel = await this.client.channels.fetch(this.constants.CHANNEL_HOME);
-            if (channel) {
-                await (channel as TextChannel).messages.fetch(this.constants.MESSAGE_HOME);
+            try {
+                const channel = await this.client.channels.fetch(this.constants.CHANNEL_HOME);
+                if (channel) {
+                    await (channel as TextChannel).messages.fetch(this.constants.MESSAGE_HOME);
+                }
+            } catch (e) {
+                console.error(e);
+                console.error("Error retrieving CHANNEL_HOME or MESSAGE_HOME");
             }
         });
 

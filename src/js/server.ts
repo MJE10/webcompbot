@@ -100,7 +100,12 @@ export default class WebServer {
         });
 
         app.get('/solveResults', (req: express.Request, res: express.Response) => {
-            res.send(JSON.stringify(this.competition.getSolveResults(parseInt(req.url.split('?s=')[1]))));
+            try {
+                res.send(JSON.stringify(this.competition.getSolveResults(parseInt(req.url.split('?s=')[1]))));
+            } catch (e) {
+                console.error(e);
+                console.error("error parsing getSolveResults");
+            }
         });
 
         app.get('/avgResults', (req: express.Request, res: express.Response) => {
@@ -233,12 +238,22 @@ export default class WebServer {
                         }
                         if (data.eType === 'solveChangeResult') {
                             if (isAdmin) {
-                                this.competition.changeSolveResult(parseInt(data.id), parseFloat(data.result));
+                                try {
+                                    this.competition.changeSolveResult(parseInt(data.id), parseFloat(data.result));
+                                } catch (e) {
+                                    console.error("Error in changeSolveResult");
+                                    console.error(e);
+                                }
                             }
                         }
                         if (data.eType === 'solveChangePenalty') {
                             if (isAdmin) {
-                                this.competition.changeSolvePenalty(parseInt(data.id), data.penalty);
+                                try {
+                                    this.competition.changeSolvePenalty(parseInt(data.id), data.penalty);
+                                } catch (e) {
+                                    console.error("Error in changeSolvePenalty");
+                                    console.error(e);
+                                }
                             }
                         }
                         if (data.eType === 'choosePersonType') {

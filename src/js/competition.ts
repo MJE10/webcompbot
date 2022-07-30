@@ -188,16 +188,21 @@ export default class Competition {
      * Saves all of the Competition's data in the json file
      */
     save() {
-        if (this.comp.competitionId !== undefined) {
-            const path = "competitions/comp" + this.comp.competitionId + ".json"
-            if (!fs.existsSync(path)) {
-                let directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
-                directory[this.comp.competitionId] = this.comp.competitionName;
-                fs.writeFileSync("competitions/directory.json", JSON.stringify(directory));
+        try {
+            if (this.comp.competitionId !== undefined) {
+                const path = "competitions/comp" + this.comp.competitionId + ".json"
+                if (!fs.existsSync(path)) {
+                    let directory = JSON.parse(fs.readFileSync("competitions/directory.json").toString());
+                    directory[this.comp.competitionId] = this.comp.competitionName;
+                    fs.writeFileSync("competitions/directory.json", JSON.stringify(directory));
+                }
+                fs.writeFileSync(path, JSON.stringify(this.comp));
             }
-            fs.writeFileSync(path, JSON.stringify(this.comp));
+            fs.writeFileSync("competitions/default.json", JSON.stringify(this.comp));
+        } catch (e) {
+            console.error(e);
+            console.error("Error saving competition");
         }
-        fs.writeFileSync("competitions/default.json", JSON.stringify(this.comp));
     }
 
     /**
@@ -310,10 +315,15 @@ export default class Competition {
         }
 
         for (const solveIndexStr in this.comp.solves) {
-            const solveIndex = parseInt(solveIndexStr);
-            if (this.comp.solves[solveIndex].status === "awaitingScramble") possibleVolunteerSolves['scramble'].push(solveIndex);
-            if (this.comp.solves[solveIndex].status === "awaitingRunner") possibleVolunteerSolves['run'].push(solveIndex);
-            if (this.comp.solves[solveIndex].status === "awaitingJudge") possibleVolunteerSolves['judge'].push(solveIndex);
+            try {
+                const solveIndex = parseInt(solveIndexStr);
+                if (this.comp.solves[solveIndex].status === "awaitingScramble") possibleVolunteerSolves['scramble'].push(solveIndex);
+                if (this.comp.solves[solveIndex].status === "awaitingRunner") possibleVolunteerSolves['run'].push(solveIndex);
+                if (this.comp.solves[solveIndex].status === "awaitingJudge") possibleVolunteerSolves['judge'].push(solveIndex);
+            } catch (e) {
+                console.error(e);
+                console.error("Error parsing solve index");
+            }
         }
 
         for (const personIndex in this.comp.people) {
@@ -445,12 +455,17 @@ export default class Competition {
                         if (this.comp.settings.cupNumbers === 'chosen') {
                             let buttons = [];
                             for (const cupIdStr in this.comp.cups) {
-                                const cupId = parseInt(cupIdStr);
-                                let cupIsUsed = false;
-                                for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status !== "complete"
-                                    && this.comp.solves[solveId].cup === cupId)
-                                    cupIsUsed = true;
-                                if (!cupIsUsed) buttons.push({text: this.comp.cups[cupId].name, value: cupId.toString()});
+                                try {
+                                    const cupId = parseInt(cupIdStr);
+                                    let cupIsUsed = false;
+                                    for (const solveId in this.comp.solves) if (this.comp.solves[solveId].status !== "complete"
+                                        && this.comp.solves[solveId].cup === cupId)
+                                        cupIsUsed = true;
+                                    if (!cupIsUsed) buttons.push({text: this.comp.cups[cupId].name, value: cupId.toString()});
+                                } catch (e) {
+                                    console.error(e);
+                                    console.error("Error parsing cup id");
+                                }
                             }
                             let message = "Please choose which cup you are going to use:";
                             if (buttons.length === 0) message = "Waiting for organizer to add cups...";
